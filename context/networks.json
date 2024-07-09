@@ -1,0 +1,23 @@
+{
+    "polygon": {
+      "providerUrl": "https://rpc-mainnet.maticvigil.com/",
+      "network": "polygon",
+      "chainId": "137",
+      "chainIdHex": "0x89",
+      "usdtAddress": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
+    },
+    "ethereum": {
+      "providerUrl": "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID",
+      "network": "ethereum",
+      "chainId": "1",
+      "chainIdHex": "0x1",
+      "usdtAddress": "0xdAC17F958D2ee523a2206206994597C13D831ec7"
+    },
+    "bnb": {
+      "providerUrl": "https://bsc-dataseed.binance.org/",
+      "network": "bnb",
+      "chainId": "56",
+      "chainIdHex": "0x38",
+      "usdtAddress": "0x55d398326f99059ff775485246999027b3197955"
+    }
+  }
