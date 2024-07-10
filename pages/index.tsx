@@ -6,9 +6,10 @@ import { useAppContext } from "@context/state";
 import { changeNetwork } from "@context/changeNetwork"
 import networks from "@context/networks.json"
 import Swal from 'sweetalert2'
+import Cookies from "js-cookie";
 
 const Home = () => {
-  const [usdtRaised, setUsdtRaised] = useState(0)
+  const [AUKAPrice, setAUKAPrice] = useState(0)
   const imgUrl = 'https://ico-frontend-62th.vercel.app/'
   const { connectWallet, walletAddress, transfer, ondkBalance } = useAppContext();
   const usdtRef = useRef(null);
@@ -22,7 +23,15 @@ const Home = () => {
     "chainIdHex": "0x89",
     "usdtAddress": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
   });
+
+ 
   const [selectedWallet, setSelectedWallet] = useState(0);
+
+  const getAUKAPrice = async () => {
+    const auka = Cookies.get("auka")
+     
+    setAUKAPrice(auka)
+  }
   const transferForm = () => {
     const tokenName = 'AUKA'
     const usdtValue = parseFloat(usdtRef.current.value);
@@ -40,7 +49,7 @@ const Home = () => {
       alert('fill the gaps')
     } else {
       Swal.fire({
-        title: "Varify your deposit address",
+        title: "Verify your deposit address",
         text: onkdReceiverAddressValue,
         icon: "warning"
       });
@@ -51,17 +60,19 @@ const Home = () => {
   };
 
   const handleUsdtChange = (e) => {
+    getAUKAPrice()
     const usdtValue = parseFloat(e.target.value);
     if (!isNaN(usdtValue)) {
-      ondkRef.current.value = (usdtValue / 2.1).toFixed(2);
+      ondkRef.current.value = (((usdtValue / AUKAPrice) / 1.025)).toFixed(2);
     } else {
       ondkRef.current.value = "";
     }
   };
   const handleOndkChange = (e) => {
+    getAUKAPrice()
     const ondkValue = parseFloat(e.target.value);
     if (!isNaN(ondkValue)) {
-      usdtRef.current.value = (ondkValue * 2.1).toFixed(2);
+      usdtRef.current.value = ((ondkValue * AUKAPrice) * 1.025).toFixed(2);
     } else {
       usdtRef.current.value = "";
     }
@@ -77,11 +88,13 @@ const Home = () => {
   };
 
   useEffect(() => {
+    getAUKAPrice()
     console.log(selectedNetwork)
     if (selectedNetwork.network != '') {
       changeNetwork(selectedNetwork)
     }
   }, [selectedNetwork]);
+
   const handleImageClick = (index) => {
     setSelectedWallet(index);
     if (index == 0) {
@@ -147,7 +160,7 @@ const Home = () => {
 
             <div className="divider flex justify-around w-100 align-center">
               <hr />
-              <p className="font-bold">1 $AUKA = 2.10 USDT</p>
+              <p className="font-bold">1 $AUKA = {AUKAPrice} USDT + 2.5%TAX FEE</p>
               <hr />
             </div>
             <div className="flex flex-col w-96 text-left ">
@@ -232,7 +245,7 @@ const Home = () => {
                         ref={ondkRef}
                         onChange={handleOndkChange}
                       />
-                      <img src={imgUrl + "AUKA-_preview_rev_1.png"} alt="x" />
+                      <img src={imgUrl + "auka.png"} alt="x" />
                     </div>
                   </div>
                 </div>
