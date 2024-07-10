@@ -33,7 +33,7 @@ const Home = () => {
     setAUKAPrice(auka)
   }
   const transferForm = () => {
-    const tokenName = 'AUKA'
+    const tokenName = selectedToken
     const usdtValue = parseFloat(usdtRef.current.value);
     const ondkValue = parseFloat(ondkRef.current.value);
     const onkdReceiverAddressValue = onkdReceiverAddressRef.current.value
@@ -63,7 +63,11 @@ const Home = () => {
     getAUKAPrice()
     const usdtValue = parseFloat(e.target.value);
     if (!isNaN(usdtValue)) {
-      ondkRef.current.value = (((usdtValue / AUKAPrice) / 1.025)).toFixed(2);
+      if (selectedToken === 'AUKA') {
+        ondkRef.current.value = (((usdtValue / AUKAPrice) / 1.025)).toFixed(2);
+      } else if (selectedToken === 'ORIGEN') {
+        ondkRef.current.value = (usdtValue / ORIGENPrice).toFixed(2);
+      }
     } else {
       ondkRef.current.value = "";
     }
@@ -72,7 +76,11 @@ const Home = () => {
     getAUKAPrice()
     const ondkValue = parseFloat(e.target.value);
     if (!isNaN(ondkValue)) {
-      usdtRef.current.value = ((ondkValue * AUKAPrice) * 1.025).toFixed(2);
+      if (selectedToken === 'AUKA') {
+        usdtRef.current.value = ((ondkValue * AUKAPrice) * 1.025).toFixed(2);
+      } else if (selectedToken === 'ORIGEN') {
+        usdtRef.current.value = (ondkValue * ORIGENPrice).toFixed(2);
+      }
     } else {
       usdtRef.current.value = "";
     }
@@ -118,6 +126,15 @@ const Home = () => {
     }
     console.log(index)
   };
+
+  const [selectedToken, setSelectedToken] = useState(null);
+
+  const handleTokenClick = (token) => {
+    usdtRef.current.value = 0
+    ondkRef.current.value = 0
+    setSelectedToken(token);
+  };
+const ORIGENPrice= 1.83
   return (
     <div>
       <div className="header">
@@ -156,21 +173,37 @@ const Home = () => {
         <div className="main__info2">
           <div className="main_box">
             <img src={imgUrl + "logo.png"} alt="x" />
-            <h1>SALE $AUKA</h1>
+            <h1>COINS SALE</h1>
 
             <div className="divider flex justify-around w-100 align-center">
               <hr />
-              <p className="font-bold">1 $AUKA = {AUKAPrice} USDT + 2.5%TAX FEE</p>
+              {selectedToken === null ? (
+          <p className="font-bold">Select a token to see the price information</p>
+        ) : selectedToken === 'AUKA' ? (
+          <p className="font-bold">1 $AUKA = {AUKAPrice} USDT + 2.5% TAX FEE</p>
+        ) : (
+          <p className="font-bold">1 $ORIGEN = {ORIGENPrice} USDT</p>
+        )}
               <hr />
             </div>
             <div className="flex flex-col w-96 text-left ">
               <p className="font-bold mb-0 text-Left ">SELECT CURRENCY</p>
             </div>
-            <div className="flex flex-col w-96 justify-center ">
-              <button className="button-usdt  " >
-                <img src={imgUrl + "tether-usdt-seeklogo.svg"} alt="x" />
-                <p>USDT</p>
-              </button>
+            <div className="flex  w-96 justify-around ">
+              <button 
+        className={`button-token ${selectedToken === 'AUKA' ? 'selected' : ''}`} 
+        onClick={() => handleTokenClick('AUKA')}
+      >
+        <img src="https://www.vetawallet.com/_next/image?url=%2Fauka.png&w=48&q=75" alt="AUKA" />
+        <p>AUKA</p>
+      </button>
+      <button 
+        className={`button-token ${selectedToken === 'ORIGEN' ? 'selected' : ''}`} 
+        onClick={() => handleTokenClick('ORIGEN')}
+      >
+        <img src="https://www.vetawallet.com/_next/image?url=%2Forigen.png&w=48&q=75" alt="ORIGEN" />
+        <p>ORIGEN</p>
+      </button>
             </div>
 
             <div className="flex w-96 col-pay">
@@ -203,7 +236,7 @@ const Home = () => {
                 </div>
                 <div className="flex flex-col w-96 text-left ">
 
-                  <p className="font-bold mb-0">AUKA DEPOSIT ADDRESS</p>
+                  <p className="font-bold mb-0">  {selectedToken === 'AUKA' ? 'AUKA' : selectedToken === 'ORIGEN' ? 'ORIGEN' : ''} DEPOSIT ADDRESS</p>
                   {selectedWallet === 0 && walletAddress.length > 0 ? (
                     <input
                       className="input-container"
@@ -237,8 +270,9 @@ const Home = () => {
                     </div>
                   </div>
                   <div className="flex flex-col w-48 text-left">
-                    <p>AUKA you receive</p>
-                    <div className="flex w-50 input2-container">
+                  <p>
+  {selectedToken === 'AUKA' ? 'AUKA you receive' : selectedToken === 'ORIGEN' ? 'ORIGEN you receive' : 'Select a token'}
+</p>                    <div className="flex w-50 input2-container">
                       <input
                         className="input2 86"
                         type="text" placeholder="0x..."
@@ -251,7 +285,7 @@ const Home = () => {
                 </div>
               </form>
             </div>
-            <button className="button-usdt2 text-black w-60" onClick={transferForm}>BUY NOW $AUKA</button>
+            <button className="button-usdt2 text-black w-60" onClick={transferForm}>BUY NOW ${selectedToken === 'AUKA' ? 'AUKA' : selectedToken === 'ORIGEN' ? 'ORIGEN' : ''}</button>
             <p>Powered by SHARK TECHNOLOGY</p>
           </div>
         </div>

@@ -285,7 +285,49 @@
       font-size: 15px;
     }
   }
+  .button-token {
+    background-color: #c4bfb2;
+    border-radius: 35px;
+    height: 45px;
+    width: 120px;
+    font-weight: 800;
+    margin: 10% 0;
+    color: white;
+    display: flex;
+    -webkit-display: flex;
+    /* Safari & Chrome */
+    -moz-display: flex;
+    /* Firefox */
 
+    align-items: center;
+    -webkit-align-items: center;
+    /* Safari & Chrome */
+    -moz-align-items: center;
+    /* Firefox */
+
+    justify-content: center;
+    -webkit-justify-content: center;
+    /* Safari & Chrome */
+    -moz-justify-content: center;
+    /* Firefox */
+
+    margin: 0;
+    margin-bottom: 15px;
+
+    img {
+      width: auto;
+      margin: 0;
+      height: 70%;
+    }
+
+    p {
+      margin-left: 10%;
+      font-size: 15px;
+    }
+  }
+  .selected{
+    background-color: #F3BA2F;
+  }
   .button-usdt2 {
     background-color: #F3BA2F;
     border-radius: 35px;

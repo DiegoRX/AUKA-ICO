@@ -20,7 +20,7 @@ export function AppWrapper({ children }) {
   const network = 137;
   const USDC_ADDRESS = "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582"
   const USDT_RECEIVER_ADDRESS = "0x316747dddD12840b29b87B7AF16Ba6407C17F19b"
-  const ONDK_ADDRESS = "0x961e742066e3d1cAD863A45a82C7B6e87bB3A02F"
+  const ONDK_ADDRESS = "0x76031D8C9EBE5b9b212c255B4790C60b83DDA005"
 
   const connectWallet = async () => {
     const {
