@@ -17,6 +17,15 @@ class RequestService {
     }
   }
 
+  async postSell(data) {
+    try {
+      const resp = await axios.post(`${this.urlServer}/sell`, data, {});
+      return this.switchCase(resp);
+    } catch (error) {
+      return this.switchCase(error.request);
+    }
+  }
+
   async get() {
     try {
       const resp = await axios.get(`${this.urlServer}${this.version}`, {});

@@ -11,7 +11,7 @@ import Cookies from "js-cookie";
 const Home = () => {
   const [AUKAPrice, setAUKAPrice] = useState(0)
   const imgUrl = 'https://ico-frontend-62th.vercel.app/'
-  const { connectWallet, walletAddress, transfer, ondkBalance } = useAppContext();
+  const { connectWallet, walletAddress, transferAUKA, transferORIGEN, ondkBalance, transferUSDTfromAUKA, transferUSDTfromORIGEN } = useAppContext();
   const usdtRef = useRef(null);
   const ondkRef = useRef(null);
   const onkdReceiverAddressRef = useRef(null)
@@ -19,80 +19,106 @@ const Home = () => {
   const [selectedNetwork, setSelectedNetwork] = useState({
     "providerUrl": "https://rpc-mainnet.maticvigil.com/",
     "network": "polygon",
-    "chainId": "137",
-    "chainIdHex": "0x89",
+    "networkId": "137",
+    "networkIdHex": "0x89",
     "usdtAddress": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
   });
 
- 
+
   const [selectedWallet, setSelectedWallet] = useState(0);
 
   const getAUKAPrice = async () => {
     const auka = Cookies.get("auka")
-     
     setAUKAPrice(auka)
   }
+
   const transferForm = () => {
     const tokenName = selectedToken
-    const usdtValue = parseFloat(usdtRef.current.value);
-    const ondkValue = parseFloat(ondkRef.current.value);
-    const onkdReceiverAddressValue = onkdReceiverAddressRef.current.value
-    // Verificar si el usuario ingresó un valor válido en USDT
-    if (!isNaN(usdtValue)) {
-      ondkRef.current.value = (usdtValue / 2.1).toFixed(2); // Convertir a AUKA
-    } else if (!isNaN(ondkValue)) {
-      usdtRef.current.value = (ondkValue * 2.1).toFixed(2); // Convertir a USDT
+    const usdtAmount = parseFloat(usdtRef.current.value);
+    const tokenAmount = parseFloat(ondkRef.current.value);
+    const tokenReceiverAddress = onkdReceiverAddressRef.current.value
+    if (!isNaN(usdtAmount)) {
+      ondkRef.current.value = (usdtAmount / 2.1).toFixed(2);
+    } else if (!isNaN(tokenAmount)) {
+      usdtRef.current.value = (tokenAmount * 2.1).toFixed(2);
     }
-    const { providerUrl, network, chainId } = selectedNetwork
-
-    if (usdtValue == 0 || ondkValue == 0 || onkdReceiverAddressValue.lenght > 42) {
+    const { providerUrl, network, networkId, usdtAddress } = selectedNetwork
+    if (usdtAmount == 0 || tokenAmount == 0 || tokenReceiverAddress.lenght > 42) {
       alert('fill the gaps')
     } else {
       Swal.fire({
         title: "Verify your deposit address",
-        text: onkdReceiverAddressValue,
+        text: tokenReceiverAddress,
         icon: "warning"
       });
-      console.log(usdtValue, ondkValue, network, chainId, onkdReceiverAddressValue, providerUrl)
-      transfer(usdtValue, selectedNetwork.usdtAddress,tokenName, ondkValue, network, chainId, onkdReceiverAddressValue, providerUrl)
-
+      console.log(usdtAmount, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl)
+      let data = { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl }
+      if (selectedToken === 'AUKA') {
+        transferAUKA(data)
+      } else if (selectedToken === 'ORIGEN') {
+        transferORIGEN(data)
+      }
     }
   };
 
-  const handleUsdtChange = (e) => {
+  const handleUsdtChangeBuy = (e) => {
     getAUKAPrice()
-    const usdtValue = parseFloat(e.target.value);
-    if (!isNaN(usdtValue)) {
+    const usdtAmount = parseFloat(e.target.value);
+    if (!isNaN(usdtAmount)) {
       if (selectedToken === 'AUKA') {
-        ondkRef.current.value = (((usdtValue / AUKAPrice) / 1.025)).toFixed(2);
+        ondkRef.current.value = (((usdtAmount / AUKAPrice))).toFixed(2);
       } else if (selectedToken === 'ORIGEN') {
-        ondkRef.current.value = (usdtValue / ORIGENPrice).toFixed(2);
+        ondkRef.current.value = (usdtAmount / ORIGENPrice).toFixed(2);
       }
     } else {
       ondkRef.current.value = "";
     }
   };
-  const handleOndkChange = (e) => {
+
+  const handleTokenChangeBuy = (e) => {
     getAUKAPrice()
-    const ondkValue = parseFloat(e.target.value);
-    if (!isNaN(ondkValue)) {
+    const tokenAmount = parseFloat(e.target.value);
+    if (!isNaN(tokenAmount)) {
       if (selectedToken === 'AUKA') {
-        usdtRef.current.value = ((ondkValue * AUKAPrice) * 1.025).toFixed(2);
+        usdtRef.current.value = ((tokenAmount * AUKAPrice)).toFixed(2);
       } else if (selectedToken === 'ORIGEN') {
-        usdtRef.current.value = (ondkValue * ORIGENPrice).toFixed(2);
+        usdtRef.current.value = (tokenAmount * ORIGENPrice).toFixed(2);
       }
     } else {
       usdtRef.current.value = "";
     }
   };
+  const handleUsdtChangeSell = (e) => {
+    getAUKAPrice()
+    const usdtAmount = parseFloat(e.target.value);
+    if (!isNaN(usdtAmount)) {
+      if (selectedToken === 'AUKA') {
+        ondkRef.current.value = (((usdtAmount / AUKAPrice) / 0.975)).toFixed(2);
+      } else if (selectedToken === 'ORIGEN') {
+        ondkRef.current.value = (usdtAmount / ORIGENPrice / 0.975).toFixed(2);
+      }
+    } else {
+      ondkRef.current.value = "";
+    }
+  };
 
-
-
+  const handleTokenChangeSell = (e) => {
+    getAUKAPrice()
+    const tokenAmount = parseFloat(e.target.value);
+    if (!isNaN(tokenAmount)) {
+      if (selectedToken === 'AUKA') {
+        usdtRef.current.value = ((tokenAmount * AUKAPrice) * 0.975).toFixed(2);
+      } else if (selectedToken === 'ORIGEN') {
+        usdtRef.current.value = (tokenAmount * ORIGENPrice * 0.975).toFixed(2);
+      }
+    } else {
+      usdtRef.current.value = "";
+    }
+  };
   const handleNetworkChange = (event) => {
     const selectedValue = event.target.value;
     const networkData = networks[selectedValue];
     setSelectedNetwork(networkData);
-
   };
 
   useEffect(() => {
@@ -108,7 +134,7 @@ const Home = () => {
     if (index == 0) {
       Swal.fire({
         title: "Add Orden Global blockchain and AUKA token to Metamask",
-        text: "https://ordenglobal-rpc.com 0x961e742066e3d1cAD863A45a82C7B6e87bB3A02F",
+        text: "https://ordenglobal-rpc.com 0x6Facc8Df79cEDc6C5065442ce27e915Aa3a26B9B",
         icon: "warning"
       });
       onkdReceiverAddressRef.current.value = walletAddress
@@ -116,11 +142,10 @@ const Home = () => {
       Swal.fire({
         title: "Copy your wallet from VetaWallet",
         html: `
-    <p>Make sure to type the correct VetaWallet Address</p>
-    <a href="https://www.vetawallet.com/register" target="_blank" autofocus>New to VetaWallet? <b>Register</b></a>
-  `,
+        <p>Make sure to type the correct VetaWallet Address</p>
+        <a href="https://www.vetawallet.com/register" target="_blank" autofocus>New to VetaWallet? <b>Register</b></a>
+      `,
         icon: "warning"
-
       });
       onkdReceiverAddressRef.current.value = ''
     }
@@ -134,7 +159,41 @@ const Home = () => {
     ondkRef.current.value = 0
     setSelectedToken(token);
   };
-const ORIGENPrice= 1.83
+
+  const ORIGENPrice = 1.83
+
+  const [buySell, setBuySell] = useState('buy');
+
+  const handleBuySell = (action) => {
+    usdtRef.current.value = 0
+    ondkRef.current.value = 0
+    setBuySell(action);
+  };
+  const sellTokens = () => {
+    const tokenName = selectedToken
+    const usdtAmount = usdtRef.current.value;
+    const tokenAmount = ondkRef.current.value;
+    const tokenReceiverAddress = onkdReceiverAddressRef.current.value
+
+    console.log(tokenAmount, usdtAmount, tokenName, tokenReceiverAddress.length)
+    const { providerUrl, network, networkId, usdtAddress } = selectedNetwork
+    if (usdtAmount == 0 || tokenAmount == 0 || tokenReceiverAddress.lenght >= 42) {
+      alert('fill the gaps')
+    } else {
+      Swal.fire({
+        title: "Verify your deposit address",
+        text: tokenReceiverAddress,
+        icon: "warning"
+      });
+      console.log(usdtAmount, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl)
+      let data = { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl }
+      if (selectedToken === 'AUKA') {
+        transferUSDTfromAUKA(data)
+      } else if (selectedToken === 'ORIGEN') {
+        transferUSDTfromORIGEN(data)
+      }
+    }
+  };
   return (
     <div>
       <div className="header">
@@ -156,7 +215,6 @@ const ORIGENPrice= 1.83
             <button className="actions_buy-now" onClick={connectWallet}>CONNECT WALLET</button>
           )}
         </div>
-
       </div>
       <div className="main__bg">
         <div className="main__info">
@@ -171,45 +229,44 @@ const ORIGENPrice= 1.83
           </video>
         </div>
         <div className="main__info2">
-          <div className="main_box">
+          {buySell === 'buy' ? (<div className="main_box">
             <img src={imgUrl + "logo.png"} alt="x" />
-            <h1>COINS SALE</h1>
+            <h1>BUY TOKENS</h1>
+            <p className="cursor-pointer" onClick={() => handleBuySell('sell')}>SELL TOKENS</p>
 
             <div className="divider flex justify-around w-100 align-center">
               <hr />
               {selectedToken === null ? (
-          <p className="font-bold">Select a token to see the price information</p>
-        ) : selectedToken === 'AUKA' ? (
-          <p className="font-bold">1 $AUKA = {AUKAPrice} USDT + 2.5% TAX FEE</p>
-        ) : (
-          <p className="font-bold">1 $ORIGEN = {ORIGENPrice} USDT</p>
-        )}
+                <p className="font-bold">Select a token to see the price information</p>
+              ) : selectedToken === 'AUKA' ? (
+                <p className="font-bold">1 $AUKA = {AUKAPrice} USDT</p>
+              ) : (
+                <p className="font-bold">1 $ORIGEN = {ORIGENPrice} USDT</p>
+              )}
               <hr />
             </div>
             <div className="flex flex-col w-96 text-left ">
               <p className="font-bold mb-0 text-Left ">SELECT CURRENCY</p>
             </div>
             <div className="flex  w-96 justify-around ">
-              <button 
-        className={`button-token ${selectedToken === 'AUKA' ? 'selected' : ''}`} 
-        onClick={() => handleTokenClick('AUKA')}
-      >
-        <img src="https://www.vetawallet.com/_next/image?url=%2Fauka.png&w=48&q=75" alt="AUKA" />
-        <p>AUKA</p>
-      </button>
-      <button 
-        className={`button-token ${selectedToken === 'ORIGEN' ? 'selected' : ''}`} 
-        onClick={() => handleTokenClick('ORIGEN')}
-      >
-        <img src="https://www.vetawallet.com/_next/image?url=%2Forigen.png&w=48&q=75" alt="ORIGEN" />
-        <p>ORIGEN</p>
-      </button>
+              <button
+                className={`button-token ${selectedToken === 'AUKA' ? 'selected' : ''}`}
+                onClick={() => handleTokenClick('AUKA')}
+              >
+                <img src="https://www.vetawallet.com/_next/image?url=%2Fauka.png&w=48&q=75" alt="AUKA" />
+                <p>AUKA</p>
+              </button>
+              <button
+                className={`button-token ${selectedToken === 'ORIGEN' ? 'selected' : ''}`}
+                onClick={() => handleTokenClick('ORIGEN')}
+              >
+                <img src="https://www.vetawallet.com/_next/image?url=%2Forigen.png&w=48&q=75" alt="ORIGEN" />
+                <p>ORIGEN</p>
+              </button>
             </div>
-
             <div className="flex w-96 col-pay">
               <form action="">
                 <div className="flex flex-col w-96 text-left ">
-
                   <p className="font-bold mb-0">SELECT NETWORK</p>
                   <select className="input-container" name="network" id="network" onChange={handleNetworkChange}>                    <option value="polygon">Polygon</option>
                     <option value="ethereum">Ethereum</option>
@@ -235,7 +292,6 @@ const ORIGENPrice= 1.83
                   </div>
                 </div>
                 <div className="flex flex-col w-96 text-left ">
-
                   <p className="font-bold mb-0">  {selectedToken === 'AUKA' ? 'AUKA' : selectedToken === 'ORIGEN' ? 'ORIGEN' : ''} DEPOSIT ADDRESS</p>
                   {selectedWallet === 0 && walletAddress.length > 0 ? (
                     <input
@@ -255,8 +311,7 @@ const ORIGENPrice= 1.83
                       ref={onkdReceiverAddressRef}
                     />) : null}
                 </div>
-                <div className="flex w-96 ">
-
+                <div className="flex w-96">
                   <div className="flex flex-col w-48 text-left">
                     <p>USDT you pay</p>
                     <div className="flex w-50 input2-container">
@@ -264,22 +319,28 @@ const ORIGENPrice= 1.83
                         className="input2 86"
                         type="text" placeholder="0x..."
                         ref={usdtRef}
-                        onChange={handleUsdtChange}
+                        onChange={handleUsdtChangeBuy}
                       />
                       <img src={imgUrl + "tether-usdt-seeklogo.svg"} alt="x" />
                     </div>
                   </div>
                   <div className="flex flex-col w-48 text-left">
-                  <p>
-  {selectedToken === 'AUKA' ? 'AUKA you receive' : selectedToken === 'ORIGEN' ? 'ORIGEN you receive' : 'Select a token'}
-</p>                    <div className="flex w-50 input2-container">
+                    <p>
+                      {selectedToken === 'AUKA' ? 'AUKA you receive' : selectedToken === 'ORIGEN' ? 'ORIGEN you receive' : 'Select a token'}
+                    </p>                    <div className="flex w-50 input2-container">
                       <input
                         className="input2 86"
                         type="text" placeholder="0x..."
                         ref={ondkRef}
-                        onChange={handleOndkChange}
+                        onChange={handleTokenChangeBuy}
                       />
-                      <img src={imgUrl + "auka.png"} alt="x" />
+                      {selectedToken === 'ORIGEN' ? (
+                        <img src="https://www.vetawallet.com/_next/image?url=%2Forigen.png&w=48&q=75" alt="ORIGEN" />
+                      ) : selectedToken === 'AUKA' ? (
+                        <img src="https://www.vetawallet.com/_next/image?url=%2Fauka.png&w=48&q=75" alt="AUKA" />
+                      ) : (
+                        <></>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -287,9 +348,102 @@ const ORIGENPrice= 1.83
             </div>
             <button className="button-usdt2 text-black w-60" onClick={transferForm}>BUY NOW ${selectedToken === 'AUKA' ? 'AUKA' : selectedToken === 'ORIGEN' ? 'ORIGEN' : ''}</button>
             <p>Powered by SHARK TECHNOLOGY</p>
-          </div>
+          </div>) : (<div className="main_box">
+            <img src={imgUrl + "logo.png"} alt="x" />
+            <h1>SELL TOKENS</h1>
+            <p className="cursor-pointer" onClick={() => handleBuySell('buy')}>BUY TOKENS</p>
+            <div className="divider flex justify-around w-100 align-center">
+              <hr />
+              {selectedToken === null ? (
+                <p className="font-bold">Select a token to see the price information</p>
+              ) : selectedToken === 'AUKA' ? (
+                buySell === 'buy' ? (
+                  <p className="font-bold">1 $AUKA = {AUKAPrice} USDT</p>
+                ) : (
+                  <p className="font-bold">1 $AUKA = {(AUKAPrice * 0.975).toFixed(2)} USDT</p>
+                )
+              ) : (
+                buySell === 'buy' ? (
+                  <p className="font-bold">1 $ORIGEN = {ORIGENPrice} USDT</p>
+                ) : (
+                  <p className="font-bold">1 $ORIGEN = {(ORIGENPrice * 0.975).toFixed(2)} USDT</p>
+                )
+              )}
+              <hr />
+            </div>
+            <div className="flex flex-col w-96 text-left ">
+              <p className="font-bold mb-0 text-Left ">SELECT CURRENCY</p>
+            </div>
+            <div className="flex  w-96 justify-around ">
+              <button
+                className={`button-token ${selectedToken === 'AUKA' ? 'selected' : ''}`}
+                onClick={() => handleTokenClick('AUKA')}
+              >
+                <img src="https://www.vetawallet.com/_next/image?url=%2Fauka.png&w=48&q=75" alt="AUKA" />
+                <p>AUKA</p>
+              </button>
+              <button
+                className={`button-token ${selectedToken === 'ORIGEN' ? 'selected' : ''}`}
+                onClick={() => handleTokenClick('ORIGEN')}
+              >
+                <img src="https://www.vetawallet.com/_next/image?url=%2Forigen.png&w=48&q=75" alt="ORIGEN" />
+                <p>ORIGEN</p>
+              </button>
+            </div>
+            <div className="flex w-96 col-pay">
+              <form action="">
+                <div className="flex flex-col w-96 text-left ">
+                  <p className="font-bold mb-0">  USDT RECEIVER ADDRESS</p>
+
+                  <input
+                    className="input-container"
+                    type="text"
+                    placeholder="0x..."
+                    required
+                    ref={onkdReceiverAddressRef}
+                  />
+                </div>
+                <div className="flex w-96">
+
+                  <div className="flex flex-col w-48 text-left">
+                    <p>
+                      {selectedToken === 'AUKA' ? 'AUKA you sell' : selectedToken === 'ORIGEN' ? 'ORIGEN you sell' : 'Select a token'}
+                    </p>                    <div className="flex w-50 input2-container">
+                      <input
+                        className="input2 86"
+                        type="text" placeholder="0x..."
+                        ref={ondkRef}
+                        onChange={handleTokenChangeSell}
+                      />
+                      {selectedToken === 'ORIGEN' ? (
+                        <img src="https://www.vetawallet.com/_next/image?url=%2Forigen.png&w=48&q=75" alt="ORIGEN" />
+                      ) : selectedToken === 'AUKA' ? (
+                        <img src="https://www.vetawallet.com/_next/image?url=%2Fauka.png&w=48&q=75" alt="AUKA" />
+                      ) : (
+                        <p></p>
+                      )}                    </div>
+                  </div>
+                  <div className="flex flex-col w-48 text-left">
+                    <p>USDT you receive</p>
+                    <div className="flex w-50 input2-container">
+                      <input
+                        className="input2 86"
+                        type="text" placeholder="0x..."
+                        ref={usdtRef}
+                        onChange={handleUsdtChangeSell}
+                      />
+                      <img src={imgUrl + "tether-usdt-seeklogo.svg"} alt="x" />
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+            <button className="button-usdt2 text-black w-60" onClick={sellTokens}>SELL NOW ${selectedToken === 'AUKA' ? 'AUKA' : selectedToken === 'ORIGEN' ? 'ORIGEN' : ''}</button>
+            <p>Powered by SHARK TECHNOLOGY</p>
+          </div>)}
+
         </div>
-        <div className="partners ">
+        <div className="partners">
           <img src={imgUrl + 'CoffeBeanSwap_Horizontal-1.png'} alt="logo" />
           <img src={imgUrl + 'crypto.png'} alt="logo" />
           <img src={imgUrl + 'logo-3.png'} alt="logo" />

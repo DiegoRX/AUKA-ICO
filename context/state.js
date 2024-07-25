@@ -19,8 +19,10 @@ export function AppWrapper({ children }) {
   const [ondkBalance, setOndkBalance] = useState(0);
   const network = 137;
   const USDC_ADDRESS = "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582"
-  const USDT_RECEIVER_ADDRESS = "0x316747dddD12840b29b87B7AF16Ba6407C17F19b"
-  const ONDK_ADDRESS = "0x76031D8C9EBE5b9b212c255B4790C60b83DDA005"
+  const USDT_RECEIVER_ADDRESS = "0x3E531Ce4fd73b5a3EA86E37fbcd92e2c36490909"
+  const TOKEN_RECEIVER_ADDRESS = "0x3E531Ce4fd73b5a3EA86E37fbcd92e2c36490909"
+
+  const AUKA_ADDRESS = "0x6Facc8Df79cEDc6C5065442ce27e915Aa3a26B9B"
 
   const connectWallet = async () => {
     const {
@@ -43,35 +45,35 @@ export function AppWrapper({ children }) {
 
   };
 
-  
+
 
   useEffect(() => {
     connectWallet();
 
   }, []);
 
- 
 
-  const getONDKBalance = async () => {
-let ERC20_ABI = require("@config/abi/erc20.json");
-  let provider = await detectEthereumProvider();
-  if (provider) {
-    const web3Provider = new Web3(window.ethereum);
-    let ONDKContract = new web3Provider.eth.Contract(
-      ERC20_ABI,
-      ONDK_ADDRESS
-    );
-    const resultApprove = await ONDKContract.methods.balanceOf(walletAddress[0]).call()
-   let finalBalance =resultApprove/10**18
-    setOndkBalance(finalBalance)
 
-    console.log(finalBalance)
+  const getAUKABalance = async () => {
+    let ERC20_ABI = require("@config/abi/erc20.json");
+    let provider = await detectEthereumProvider();
+    if (provider) {
+      const web3Provider = new Web3(window.ethereum);
+      let AUKAContract = new web3Provider.eth.Contract(
+        ERC20_ABI,
+        AUKA_ADDRESS
+      );
+      const resultApprove = await AUKAContract.methods.balanceOf(walletAddress[0]).call()
+      let finalBalance = resultApprove / 10 ** 18
+      setOndkBalance(finalBalance)
+
+      console.log(finalBalance)
+    }
   }
-  }
-   getONDKBalance()
-  const transfer = async (usdtAmount,usdtAddress,tokenName, ondkAmount, network, networkId, ondkReceiverAddress, providerUrl) => {
-    let weiUSDTValue = usdtAmount * 10 ** 6
-    let weiONDKValue = ondkAmount * 10 ** 18
+  getAUKABalance()
+  const transferAUKA = async (usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl) => {
+    let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
+    let weiAUKAValue = (tokenAmount * 10 ** 18).toString()
 
     let ERC20_ABI = require("@config/abi/erc20.json");
     let provider = await detectEthereumProvider();
@@ -96,21 +98,180 @@ let ERC20_ABI = require("@config/abi/erc20.json");
             "buyerAddress": receipt.from,
             "tokenName": tokenName,
             "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
-            "ondkReceiverAddress": ondkReceiverAddress,
+            "tokenReceiverAddress": tokenReceiverAddress,
             "txHash": receipt.transactionHash,
             "usdtAddress": USDC_ADDRESS,
             "usdtAmount": String(usdtAmount),
-            "ondkAmount": String(ondkAmount),
+            "tokenAmount": String(tokenAmount),
             "weiUSDTValue": String(weiUSDTValue),
-            "weiONDKValue": String(weiONDKValue),
+            "weiTokenValue": String(weiAUKAValue),
             "approved": true
           })
           Swal.fire({
-            title: `${ondkAmountONDK} $ONDK sent to`,
-            text: ondkReceiverAddress,
+            title: `${tokenAmount} $AUKA sent to`,
+            text: tokenReceiverAddress,
             icon: "success"
           });
-          getONDKBalance()
+          getAUKABalance()
+        })
+        .catch((revertReason) => {
+          console.log(
+            "ERROR! Transaction reverted: " +
+            revertReason.receipt
+          );
+        });
+    }
+  }
+  const transferORIGEN = async (usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl) => {
+    let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
+    let weiORIGENValue = (tokenAmount * 10 ** 18).toString()
+
+    let ERC20_ABI = require("@config/abi/erc20.json");
+    let provider = await detectEthereumProvider();
+    if (provider) {
+      const web3Provider = new Web3(window.ethereum);
+      let USDCContract = new web3Provider.eth.Contract(
+        ERC20_ABI,
+        usdtAddress
+      );
+      const resultApprove = await USDCContract.methods
+        .transfer(USDT_RECEIVER_ADDRESS, weiUSDTValue)
+        .send({ from: walletAddress[0], gas: 0, value: 0 })
+        .on("transactionHash", function (hash) {
+          console.log("Executing...");
+        })
+        .on("receipt", function (receipt) {
+          console.log(receipt);
+          RequestService.post({
+            providerUrl,
+            network,
+            "networkId": String(networkId),
+            "buyerAddress": receipt.from,
+            "tokenName": tokenName,
+            "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
+            "tokenReceiverAddress": tokenReceiverAddress,
+            "txHash": receipt.transactionHash,
+            "usdtAddress": USDC_ADDRESS,
+            "usdtAmount": String(usdtAmount),
+            "tokenAmount": String(tokenAmount),
+            "weiUSDTValue": String(weiUSDTValue),
+            "weiTokenValue": String(weiORIGENValue),
+            "approved": true
+          })
+          Swal.fire({
+            title: `${tokenAmount} $ORIGEN sent to`,
+            text: tokenReceiverAddress,
+            icon: "success"
+          });
+
+        })
+        .catch((revertReason) => {
+          console.log(
+            "ERROR! Transaction reverted: " +
+            revertReason.receipt
+          );
+        });
+    }
+  }
+
+  const transferUSDTfromAUKA = async (data) => {
+    const {usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl} = data
+    let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
+    let weiAUKAValue = (tokenAmount * 10 ** 18).toString()
+console.log(weiAUKAValue)
+    let ERC20_ABI = require("@config/abi/erc20.json");
+    let provider = await detectEthereumProvider();
+    if (provider) {
+      const web3Provider = new Web3(window.ethereum);
+      let USDCContract = new web3Provider.eth.Contract(
+        ERC20_ABI,
+        AUKA_ADDRESS
+      );
+      const resultApprove = await USDCContract.methods
+        .transfer(TOKEN_RECEIVER_ADDRESS, weiAUKAValue)
+        .send({ from: walletAddress[0], gas: 0, value: 0 })
+        .on("transactionHash", function (hash) {
+          console.log("Executing...");
+        })
+        .on("receipt", function (receipt) {
+          console.log(receipt);
+          RequestService.postSell({
+            providerUrl,
+            network,
+            "networkId": String(networkId),
+            "buyerAddress": receipt.from,
+            "tokenName": tokenName,
+            "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
+            "tokenReceiverAddress": tokenReceiverAddress,
+            "txHash": receipt.transactionHash,
+            "usdtAddress": USDC_ADDRESS,
+            "usdtAmount": String(usdtAmount),
+            "tokenAmount": String(tokenAmount),
+            "weiUSDTValue": String(weiUSDTValue),
+            "weiTokenValue": String(weiAUKAValue),
+            "approved": true
+          })
+          Swal.fire({
+            title: `${tokenAmount} $AUKA sent to`,
+            text: tokenReceiverAddress,
+            icon: "success"
+          });
+          getAUKABalance()
+        })
+        .catch((revertReason) => {
+          console.log(
+            "ERROR! Transaction reverted: " +
+            revertReason.receipt
+          );
+        });
+    }
+  }
+  const transferUSDTfromORIGEN = async (data) => {
+    const {usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl} = data
+    let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
+    let weiORIGENValue = (tokenAmount * 10 ** 18).toString()
+
+    let ERC20_ABI = require("@config/abi/erc20.json");
+    let provider = await detectEthereumProvider();
+    if (provider) {
+      const web3Provider = new Web3(window.ethereum);
+
+      const transactionParameters = {
+        to: TOKEN_RECEIVER_ADDRESS, // Dirección del receptor
+        from: walletAddress[0], // Dirección del remitente
+        value: weiORIGENValue, // Valor en wei
+        gas: '21000', // Límite de gas estándar para transferencias de ETH
+      };
+console.log(transactionParameters)
+      let tx = new web3Provider.eth.sendTransaction(
+        transactionParameters
+      ).on("transactionHash", function (hash) {
+          console.log("Executing...");
+        })
+        .on("receipt", function (receipt) {
+          console.log(receipt);
+          RequestService.postSell({
+            providerUrl,
+            network,
+            "networkId": String(networkId),
+            "buyerAddress": receipt.from,
+            "tokenName": tokenName,
+            "usdtReceiverAddress": TOKEN_RECEIVER_ADDRESS,
+            "tokenReceiverAddress": tokenReceiverAddress,
+            "txHash": receipt.transactionHash,
+            "usdtAddress": USDC_ADDRESS,
+            "usdtAmount": String(usdtAmount),
+            "tokenAmount": String(tokenAmount),
+            "weiUSDTValue": String(weiUSDTValue),
+            "weiTokenValue": String(weiORIGENValue),
+            "approved": true
+          })
+          Swal.fire({
+            title: `${tokenAmount} $ORIGEN sent to`,
+            text: tokenReceiverAddress,
+            icon: "success"
+          });
+
         })
         .catch((revertReason) => {
           console.log(
@@ -128,9 +289,11 @@ let ERC20_ABI = require("@config/abi/erc20.json");
     ondkBalance,
     coffeeContract,
     web3,
-    transfer,
+    transferAUKA,
+    transferORIGEN,
     network,
-
+    transferUSDTfromAUKA,
+    transferUSDTfromORIGEN
 
   };
 
