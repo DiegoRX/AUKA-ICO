@@ -189,7 +189,7 @@ console.log(weiAUKAValue)
       );
       const resultApprove = await USDCContract.methods
         .transfer(TOKEN_RECEIVER_ADDRESS, weiAUKAValue)
-        .send({ from: walletAddress[0], gas: 0, value: 0 })
+        .send({ from: walletAddress[0], gas: 200000, value: 0, gasLimit: 21000 })
         .on("transactionHash", function (hash) {
           console.log("Executing...");
         })
@@ -240,7 +240,8 @@ console.log(weiAUKAValue)
         to: TOKEN_RECEIVER_ADDRESS, // Dirección del receptor
         from: walletAddress[0], // Dirección del remitente
         value: weiORIGENValue, // Valor en wei
-        gas: '21000', // Límite de gas estándar para transferencias de ETH
+        gas: 210000, // Límite de gas estándar para transferencias de ETH
+        gasPrice: 5000000000000, // Valor del gas 
       };
 console.log(transactionParameters)
       let tx = new web3Provider.eth.sendTransaction(
