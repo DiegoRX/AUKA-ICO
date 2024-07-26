@@ -71,10 +71,19 @@ export function AppWrapper({ children }) {
     }
   }
   getAUKABalance()
-  const transferAUKA = async (usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl) => {
-    let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
-    let weiAUKAValue = (tokenAmount * 10 ** 18).toString()
-
+  const transferAUKA = async (data) => {
+    const {usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl} = data
+    if (isNaN(usdtAmount) || isNaN(tokenAmount)) {
+      console.error("Invalid input: usdtAmount or tokenAmount is not a number");
+      return;
+    }
+  
+    let weiUSDTValue = (usdtAmount * 10 ** 6);
+    let weiAUKAValue = (tokenAmount * 10 ** 18);
+  
+    console.log("USDT Value (in wei):", weiUSDTValue);
+    console.log("Token Value (in wei):", weiAUKAValue);
+  
     let ERC20_ABI = require("@config/abi/erc20.json");
     let provider = await detectEthereumProvider();
     if (provider) {
@@ -122,7 +131,8 @@ export function AppWrapper({ children }) {
         });
     }
   }
-  const transferORIGEN = async (usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl) => {
+  const transferORIGEN = async (data) => {
+    const {usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl} = data
     let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
     let weiORIGENValue = (tokenAmount * 10 ** 18).toString()
 

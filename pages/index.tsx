@@ -36,12 +36,9 @@ const Home = () => {
     const tokenName = selectedToken
     const usdtAmount = parseFloat(usdtRef.current.value);
     const tokenAmount = parseFloat(ondkRef.current.value);
+    console.log(usdtRef.current.value,ondkRef.current.value)
     const tokenReceiverAddress = onkdReceiverAddressRef.current.value
-    if (!isNaN(usdtAmount)) {
-      ondkRef.current.value = (usdtAmount / 2.1).toFixed(2);
-    } else if (!isNaN(tokenAmount)) {
-      usdtRef.current.value = (tokenAmount * 2.1).toFixed(2);
-    }
+
     const { providerUrl, network, networkId, usdtAddress } = selectedNetwork
     if (usdtAmount == 0 || tokenAmount == 0 || tokenReceiverAddress.lenght > 42) {
       alert('fill the gaps')
@@ -53,6 +50,7 @@ const Home = () => {
       });
       console.log(usdtAmount, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl)
       let data = { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl }
+      console.log(data)
       if (selectedToken === 'AUKA') {
         transferAUKA(data)
       } else if (selectedToken === 'ORIGEN') {
@@ -62,25 +60,31 @@ const Home = () => {
   };
 
   const handleUsdtChangeBuy = (e) => {
-    getAUKAPrice()
+    getAUKAPrice();
     const usdtAmount = parseFloat(e.target.value);
+    console.log("USDT Amount:", usdtAmount);
+    console.log("AUKAPrice:", AUKAPrice);
     if (!isNaN(usdtAmount)) {
       if (selectedToken === 'AUKA') {
-        ondkRef.current.value = (((usdtAmount / AUKAPrice))).toFixed(2);
+        const calculatedValue = (usdtAmount / AUKAPrice).toFixed(5);
+        console.log("Calculated AUKA Value:", calculatedValue);
+        ondkRef.current.value = calculatedValue;
       } else if (selectedToken === 'ORIGEN') {
-        ondkRef.current.value = (usdtAmount / ORIGENPrice).toFixed(2);
+        const calculatedValue = (usdtAmount / ORIGENPrice).toFixed(2);
+        console.log("Calculated ORIGEN Value:", calculatedValue);
+        ondkRef.current.value = calculatedValue;
       }
     } else {
       ondkRef.current.value = "";
     }
-  };
+};
 
   const handleTokenChangeBuy = (e) => {
     getAUKAPrice()
     const tokenAmount = parseFloat(e.target.value);
     if (!isNaN(tokenAmount)) {
       if (selectedToken === 'AUKA') {
-        usdtRef.current.value = ((tokenAmount * AUKAPrice)).toFixed(2);
+        usdtRef.current.value = ((tokenAmount * AUKAPrice)).toFixed(5);
       } else if (selectedToken === 'ORIGEN') {
         usdtRef.current.value = (tokenAmount * ORIGENPrice).toFixed(2);
       }
@@ -93,7 +97,7 @@ const Home = () => {
     const usdtAmount = parseFloat(e.target.value);
     if (!isNaN(usdtAmount)) {
       if (selectedToken === 'AUKA') {
-        ondkRef.current.value = (((usdtAmount / AUKAPrice) / 0.975)).toFixed(2);
+        ondkRef.current.value = (((usdtAmount / AUKAPrice) / 0.975)).toFixed(5);
       } else if (selectedToken === 'ORIGEN') {
         ondkRef.current.value = (usdtAmount / ORIGENPrice / 0.975).toFixed(2);
       }
@@ -107,7 +111,7 @@ const Home = () => {
     const tokenAmount = parseFloat(e.target.value);
     if (!isNaN(tokenAmount)) {
       if (selectedToken === 'AUKA') {
-        usdtRef.current.value = ((tokenAmount * AUKAPrice) * 0.975).toFixed(2);
+        usdtRef.current.value = ((tokenAmount * AUKAPrice) * 0.975).toFixed(5);
       } else if (selectedToken === 'ORIGEN') {
         usdtRef.current.value = (tokenAmount * ORIGENPrice * 0.975).toFixed(2);
       }
