@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import getBlockchain from "./ethereum.js";
-
+import getWalletBalances from './getWalletBalances.js'
 import detectEthereumProvider from "@metamask/detect-provider";
 
 import Swal from 'sweetalert2'
@@ -17,6 +17,9 @@ export function AppWrapper({ children }) {
   const [accounts, setAccounts] = useState();
   const [WMATIC_ADDRESS, setWMATIC_ADDRESS] = useState('');
   const [ondkBalance, setOndkBalance] = useState(0);
+const [aukaWalletBalance, setAukaWalletBalance]= useState(0);
+const [usdtWalletBalance, setusdtWalletBalance]= useState(0);
+const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
   const network = 137;
   const USDC_ADDRESS = "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582"
   const USDT_RECEIVER_ADDRESS = "0x3E531Ce4fd73b5a3EA86E37fbcd92e2c36490909"
@@ -27,14 +30,16 @@ export function AppWrapper({ children }) {
   const connectWallet = async () => {
     const {
       accounts,
-
       WMATIC_ADDRESS,
-
       web3Provider,
-
-
-
     } = await getBlockchain();
+    const {
+      balanceUSDT,
+      balanceORIGEN,
+      balanceAUKA
+    } = await getWalletBalances();
+    setOrigenWalletBalance(Number(origenWalletBalance)/10 ** 18)
+    setusdtWalletBalance(Number(usdtWalletBalance)/10 ** 18)
     setCoffeeContract(coffeeContract);
 
     setWalletAddress(accounts);
@@ -63,11 +68,12 @@ export function AppWrapper({ children }) {
         ERC20_ABI,
         AUKA_ADDRESS
       );
+      const aukaWalletBalance = await AUKAContract.methods.balanceOf('0x8E839Af7A405f49bf72B239929b8ee3c07Ee7ba0').call()
+      setAukaWalletBalance(Number(aukaWalletBalance)/10 ** 18)
       const resultApprove = await AUKAContract.methods.balanceOf(walletAddress[0]).call()
       let finalBalance = resultApprove / 10 ** 18
       setOndkBalance(finalBalance)
 
-      console.log(finalBalance)
     }
   }
   getAUKABalance()
@@ -81,8 +87,8 @@ export function AppWrapper({ children }) {
     let weiUSDTValue = (usdtAmount * 10 ** 6);
     let weiAUKAValue = (tokenAmount * 10 ** 18);
   
-    console.log("USDT Value (in wei):", weiUSDTValue);
-    console.log("Token Value (in wei):", weiAUKAValue);
+    // console.log("USDT Value (in wei):", weiUSDTValue);
+    // console.log("Token Value (in wei):", weiAUKAValue);
   
     let ERC20_ABI = require("@config/abi/erc20.json");
     let provider = await detectEthereumProvider();
@@ -188,7 +194,7 @@ export function AppWrapper({ children }) {
     const {usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl} = data
     let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
     let weiAUKAValue = (tokenAmount * 10 ** 18).toString()
-console.log(weiAUKAValue)
+// console.log(weiAUKAValue)
     let ERC20_ABI = require("@config/abi/erc20.json");
     let provider = await detectEthereumProvider();
     if (provider) {
@@ -304,7 +310,7 @@ console.log(transactionParameters)
     transferORIGEN,
     network,
     transferUSDTfromAUKA,
-    transferUSDTfromORIGEN
+    transferUSDTfromORIGEN,aukaWalletBalance,origenWalletBalance,usdtWalletBalance
 
   };
 

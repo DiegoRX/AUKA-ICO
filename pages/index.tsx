@@ -11,11 +11,11 @@ import Cookies from "js-cookie";
 const Home = () => {
   const [AUKAPrice, setAUKAPrice] = useState(0)
   const imgUrl = 'https://ico-frontend-62th.vercel.app/'
-  const { connectWallet, walletAddress, transferAUKA, transferORIGEN, ondkBalance, transferUSDTfromAUKA, transferUSDTfromORIGEN } = useAppContext();
+  const { connectWallet, walletAddress, transferAUKA, transferORIGEN, ondkBalance, transferUSDTfromAUKA, transferUSDTfromORIGEN, aukaWalletBalance, origenWalletBalance, usdtWalletBalance } = useAppContext();
   const usdtRef = useRef(null);
   const ondkRef = useRef(null);
   const onkdReceiverAddressRef = useRef(null)
-  console.log(walletAddress)
+  // console.log(walletAddress)
   const [selectedNetwork, setSelectedNetwork] = useState({
     "providerUrl": "https://rpc-mainnet.maticvigil.com/",
     "network": "polygon",
@@ -36,7 +36,7 @@ const Home = () => {
     const tokenName = selectedToken
     const usdtAmount = parseFloat(usdtRef.current.value);
     const tokenAmount = parseFloat(ondkRef.current.value);
-    console.log(usdtRef.current.value,ondkRef.current.value)
+    // console.log(usdtRef.current.value, ondkRef.current.value)
     const tokenReceiverAddress = onkdReceiverAddressRef.current.value
 
     const { providerUrl, network, networkId, usdtAddress } = selectedNetwork
@@ -48,13 +48,31 @@ const Home = () => {
         text: tokenReceiverAddress,
         icon: "warning"
       });
-      console.log(usdtAmount, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl)
+      // console.log(usdtAmount, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl)
       let data = { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl }
-      console.log(data)
+      // console.log(data)
       if (selectedToken === 'AUKA') {
-        transferAUKA(data)
+        if (aukaWalletBalance > tokenAmount) {
+          transferAUKA(data)
+        } else {
+          Swal.fire({
+            title: "Not enough liquidity",
+            text: "Contact Orden Global Team",
+            icon: "warning"
+          });
+        }
+
       } else if (selectedToken === 'ORIGEN') {
-        transferORIGEN(data)
+
+        if (origenWalletBalance > tokenAmount) {
+          transferORIGEN(data)
+        } else {
+          Swal.fire({
+            title: "Not enough liquidity",
+            text: "Contact Orden Global Team",
+            icon: "warning"
+          });
+        }
       }
     }
   };
@@ -62,22 +80,22 @@ const Home = () => {
   const handleUsdtChangeBuy = (e) => {
     getAUKAPrice();
     const usdtAmount = parseFloat(e.target.value);
-    console.log("USDT Amount:", usdtAmount);
-    console.log("AUKAPrice:", AUKAPrice);
+    // console.log("USDT Amount:", usdtAmount);
+    // console.log("AUKAPrice:", AUKAPrice);
     if (!isNaN(usdtAmount)) {
       if (selectedToken === 'AUKA') {
         const calculatedValue = (usdtAmount / AUKAPrice).toFixed(5);
-        console.log("Calculated AUKA Value:", calculatedValue);
+        // console.log("Calculated AUKA Value:", calculatedValue);
         ondkRef.current.value = calculatedValue;
       } else if (selectedToken === 'ORIGEN') {
         const calculatedValue = (usdtAmount / ORIGENPrice).toFixed(2);
-        console.log("Calculated ORIGEN Value:", calculatedValue);
+        // console.log("Calculated ORIGEN Value:", calculatedValue);
         ondkRef.current.value = calculatedValue;
       }
     } else {
       ondkRef.current.value = "";
     }
-};
+  };
 
   const handleTokenChangeBuy = (e) => {
     getAUKAPrice()
@@ -127,11 +145,12 @@ const Home = () => {
 
   useEffect(() => {
     getAUKAPrice()
-    console.log(selectedNetwork)
+    console.log(aukaWalletBalance, origenWalletBalance, usdtWalletBalance)
+    // console.log(selectedNetwork)
     if (selectedNetwork.network != '') {
       changeNetwork(selectedNetwork)
     }
-  }, [selectedNetwork]);
+  }, [selectedNetwork, origenWalletBalance]);
 
   const handleImageClick = (index) => {
     setSelectedWallet(index);
@@ -153,7 +172,7 @@ const Home = () => {
       });
       onkdReceiverAddressRef.current.value = ''
     }
-    console.log(index)
+    // console.log(index)
   };
 
   const [selectedToken, setSelectedToken] = useState(null);
@@ -179,7 +198,7 @@ const Home = () => {
     const tokenAmount = ondkRef.current.value;
     const tokenReceiverAddress = onkdReceiverAddressRef.current.value
 
-    console.log(tokenAmount, usdtAmount, tokenName, tokenReceiverAddress.length)
+    // console.log(tokenAmount, usdtAmount, tokenName, tokenReceiverAddress.length)
     const { providerUrl, network, networkId, usdtAddress } = selectedNetwork
     if (usdtAmount == 0 || tokenAmount == 0 || tokenReceiverAddress.lenght >= 42) {
       alert('fill the gaps')
@@ -189,15 +208,37 @@ const Home = () => {
         text: tokenReceiverAddress,
         icon: "warning"
       });
-      console.log(usdtAmount, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl)
+      // console.log(usdtAmount, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl)
       let data = { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl }
       if (selectedToken === 'AUKA') {
-        transferUSDTfromAUKA(data)
+        if (usdtWalletBalance > usdtAmount) {
+          transferUSDTfromAUKA(data)
+        } else {
+          Swal.fire({
+            title: "Not enough liquidity",
+            text: "Contact Orden Global Team",
+            icon: "warning"
+          });
+        }
+
       } else if (selectedToken === 'ORIGEN') {
-        transferUSDTfromORIGEN(data)
+        if (usdtWalletBalance > usdtAmount) {
+          transferUSDTfromORIGEN(data)
+        } else {
+          Swal.fire({
+            title: "Not enough liquidity",
+            text: "Contact Orden Global Team",
+            icon: "warning"
+          });
+        }
       }
     }
   };
+
+  const [balance, setBalance] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+
   return (
     <div>
       <div className="header">
@@ -222,21 +263,28 @@ const Home = () => {
       </div>
       <div className="main__bg">
         <div className="main__info">
-          <h2>Increase your profits with ORDEN KAPITAL: the best investment!</h2>
-          <h3>GOLD IN YOUR HANDS</h3>
-          <video
-            autoPlay
-            loop
-            controls
-            src="https://ico-frontend-62th.vercel.app/WhatsApp%20Video%202024-06-13%20at%2014.35.06.mp4"
-          >
-          </video>
+          <h2>Take control of your finalcial future</h2>
+          <h3>At ordenEx, we understant the importance of staying ahead in the fast-peaced world of cryptocurrency trading.</h3>
+          <div className="flex flex-col text-center">
+            <img
+              src="https://i.postimg.cc/vmKKhfBK/Copnsv-Tcsq-Ky-of-digital-technologies-of-the-future-1-preview-rev-1.png"
+            />
+          </div>
         </div>
         <div className="main__info2">
           {buySell === 'buy' ? (<div className="main_box">
+            <div className="flex w-full h-9 mt-2">
+              <div className="flex flex-col w-50 text-center text-lg main-color selected-box">
+                BUY
+              </div>
+
+              <div onClick={() => handleBuySell('sell')} className="flex flex-col w-50 text-center text-lg cursor-pointer ">
+                SELL
+              </div>
+            </div>
             <img src={imgUrl + "logo.png"} alt="x" />
             <h1>BUY TOKENS</h1>
-            <p className="cursor-pointer" onClick={() => handleBuySell('sell')}>SELL TOKENS</p>
+
 
             <div className="divider flex justify-around w-100 align-center">
               <hr />
@@ -353,9 +401,17 @@ const Home = () => {
             <button className="button-usdt2 text-black w-60" onClick={transferForm}>BUY NOW ${selectedToken === 'AUKA' ? 'AUKA' : selectedToken === 'ORIGEN' ? 'ORIGEN' : ''}</button>
             <p>Powered by SHARK TECHNOLOGY</p>
           </div>) : (<div className="main_box">
+            <div className="flex w-full h-9 mt-2">
+              <div onClick={() => handleBuySell('buy')} className="flex flex-col w-50 text-center text-lg cursor-pointer ">
+                BUY
+              </div>
+
+              <div className="flex flex-col w-50 text-center text-lg main-color selected-box">
+                SELL
+              </div>
+            </div>
             <img src={imgUrl + "logo.png"} alt="x" />
             <h1>SELL TOKENS</h1>
-            <p className="cursor-pointer" onClick={() => handleBuySell('buy')}>BUY TOKENS</p>
             <div className="divider flex justify-around w-100 align-center">
               <hr />
               {selectedToken === null ? (

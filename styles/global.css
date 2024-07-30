@@ -15,14 +15,18 @@
 
   h2 {
     font-weight: bold;
-    font-size: 70px;
-    color: white;
+    font-size: 60px;
+    color: Black;
     text-align: center;
   }
 
   h3 {
-    font-size: 40px;
+    font-size: 30px;
     color: #F3BA2F;
+  }
+
+  img {
+    text-align: center;
   }
 
   text-align: center;
@@ -40,9 +44,9 @@
   padding: 20px;
   display: block;
 
-  color: #ccbf9a;
+  color: #e6dfca;
   /* background: linear-gradient(#aa922f 20%, #000); */
-  background-color: #000;
+  background-color: rgba(239, 239, 239, 0.06);
   background-attachment: fixed;
   -webkit-background-attachment: fixed;
   /* Safari & Chrome */
@@ -149,9 +153,10 @@
 .main_box {
   width: 401px;
   height: 700px;
-  color: black;
-  background: white;
-  border: 1px solid #dea73e;
+  color: white;
+  background: #2D2D2D;
+  /* border: 1px solid #dea73e; */
+  box-shadow: rgba(17, 12, 46, 0.15) 0px 48px 100px 0px;
   border-radius: 18px;
   text-align: center;
   margin-top: 30px;
@@ -180,6 +185,9 @@
     margin: 15px;
   }
 
+  .selected-box{
+    box-shadow: rgba(0, 0, 0, 0.35) 0px -22px 36px -28px inset;  }
+
   h1 {
     font-weight: 1000;
     font-size: 32px;
@@ -201,6 +209,9 @@
   .metamask_logo {
     height: 70px !important;
     width: 70px;
+  }
+  .main-color{
+    color: #dea73e;
   }
 
   .time_bar {
@@ -292,7 +303,7 @@
     width: 120px;
     font-weight: 800;
     margin: 10% 0;
-    color: white;
+    color: black;
     display: flex;
     -webkit-display: flex;
     /* Safari & Chrome */
@@ -365,11 +376,12 @@
     border: 1px solid #000000;
     font-weight: bold;
     margin-bottom: 15px;
+    background-color: #2D2D2D;
   }
 
   .input2-container {
     margin-bottom: 15px;
-
+    background-color: #2D2D2D;
     img {
       margin: 0;
       padding: 0;
@@ -390,6 +402,7 @@
     /* Safari & Chrome */
     -moz-text-align: center;
     /* Firefox */
+    background-color: #2D2D2D;
   }
 }
 
