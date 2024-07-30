@@ -86,7 +86,7 @@
   font-weight: 500;
 
   img {
-    width: 100px;
+    width: 60px;
   }
 
   a {
@@ -180,8 +180,8 @@
   /* Firefox */
 
   img {
-    width: 160px;
-    height: 70px;
+    width: 100px;
+    height: 100px;
     margin: 15px;
   }
 

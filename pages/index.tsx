@@ -242,7 +242,7 @@ const Home = () => {
   return (
     <div>
       <div className="header">
-        <img src={imgUrl + 'WhatsApp Image 2024-06-12 at 10.44.57 AM_preview_rev_1.png'} alt="logo" />
+        <img src={'https://i.ibb.co/ZJKFjCd/ordenex-logo.png'} alt="logo" />
         <div className="info">
           <a href="">Whitepaper</a>
           <a href="">About</a>
@@ -282,7 +282,7 @@ const Home = () => {
                 SELL
               </div>
             </div>
-            <img src={imgUrl + "logo.png"} alt="x" />
+            <img src={'https://i.ibb.co/ZJKFjCd/ordenex-logo.png'} alt="x" />
             <h1>BUY TOKENS</h1>
 
 
@@ -410,7 +410,7 @@ const Home = () => {
                 SELL
               </div>
             </div>
-            <img src={imgUrl + "logo.png"} alt="x" />
+            <img src={'https://i.ibb.co/ZJKFjCd/ordenex-logo.png'} alt="x" />
             <h1>SELL TOKENS</h1>
             <div className="divider flex justify-around w-100 align-center">
               <hr />
@@ -503,13 +503,7 @@ const Home = () => {
           </div>)}
 
         </div>
-        <div className="partners">
-          <img src={imgUrl + 'CoffeBeanSwap_Horizontal-1.png'} alt="logo" />
-          <img src={imgUrl + 'crypto.png'} alt="logo" />
-          <img src={imgUrl + 'logo-3.png'} alt="logo" />
-          <img src={imgUrl + 'Logo-OrdenEx-Horizontal.png'} alt="logo" />
-          <img src={imgUrl + 'Veta_Wallet_Horizontal-removebg-preview-2.png'} alt="logo" />
-        </div>
+       
       </div>
     </div>
   );
