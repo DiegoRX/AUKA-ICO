@@ -3,7 +3,7 @@ import Image from "next/image";
 import mapboxgl from "mapbox-gl";
 import Link from "next/link";
 import { useAppContext } from "@context/state";
-import { changeNetwork } from "@context/changeNetwork"
+import { changeNetwork, addNetwork } from "@context/changeNetwork"
 import networks from "@context/networks.json"
 import Swal from 'sweetalert2'
 import Cookies from "js-cookie";
@@ -25,6 +25,7 @@ const Home = () => {
   });
 
 
+  const [buySell, setBuySell] = useState('buy');
   const [selectedWallet, setSelectedWallet] = useState(0);
 
   const getAUKAPrice = async () => {
@@ -151,7 +152,14 @@ const Home = () => {
       changeNetwork(selectedNetwork)
     }
   }, [selectedNetwork, origenWalletBalance,aukaWalletBalance]);
-
+  useEffect(() => {
+    if (buySell === 'buy') {
+      changeNetwork({'chainIdHex':'0x89'})
+    }
+    if (buySell === 'sell') {
+      changeNetwork({'chainIdHex':'0x2154'})
+    }
+  }, [buySell]);
   const handleImageClick = (index) => {
     setSelectedWallet(index);
     if (index == 0) {
@@ -185,7 +193,6 @@ const Home = () => {
 
   const ORIGENPrice = 1.83
 
-  const [buySell, setBuySell] = useState('buy');
 
   const handleBuySell = (action) => {
     usdtRef.current.value = 0
@@ -460,6 +467,7 @@ const Home = () => {
                     type="text"
                     placeholder="0x..."
                     required
+                    value={walletAddress[0]}
                     ref={onkdReceiverAddressRef}
                   />
                 </div>
