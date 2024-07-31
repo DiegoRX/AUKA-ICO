@@ -258,7 +258,7 @@ const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
         from: walletAddress[0], // Dirección del remitente
         value: weiORIGENValue, // Valor en wei
         gas: 210000, // Límite de gas estándar para transferencias de ETH
-        gasPrice: 5000000000000, // Valor del gas 
+        gasPrice: 2000, // Valor del gas 
       };
 console.log(transactionParameters)
       let tx = new web3Provider.eth.sendTransaction(
