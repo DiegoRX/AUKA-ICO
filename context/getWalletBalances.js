@@ -38,7 +38,7 @@ const getWalletBalances = () =>
     const balanceAUKA = Number(balanceAUKAwei)/10**18;
 
 
-    const balanceUSDTwei = await usdtContract.balanceOf('0x316747dddD12840b29b87B7AF16Ba6407C17F19b');
+    const balanceUSDTwei = await usdtContract.balanceOf('0x6A1aeD0BFCC8c8aC7CB916270509CcD66911eBBc');
     const balanceUSDT = Number(balanceUSDTwei)/10**6
 
     console.log(`Balance ORIGEN: ${balanceORIGEN} ORIGEN`);
