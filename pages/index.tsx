@@ -150,7 +150,7 @@ const Home = () => {
     if (selectedNetwork.network != '') {
       changeNetwork(selectedNetwork)
     }
-  }, [selectedNetwork, origenWalletBalance]);
+  }, [selectedNetwork, origenWalletBalance,aukaWalletBalance]);
 
   const handleImageClick = (index) => {
     setSelectedWallet(index);

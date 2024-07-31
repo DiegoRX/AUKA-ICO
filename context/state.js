@@ -38,8 +38,9 @@ const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
       balanceORIGEN,
       balanceAUKA
     } = await getWalletBalances();
-    setOrigenWalletBalance(Number(origenWalletBalance)/10 ** 18)
-    setusdtWalletBalance(Number(usdtWalletBalance)/10 ** 18)
+    setOrigenWalletBalance(balanceORIGEN)
+    setusdtWalletBalance(balanceUSDT)
+    setAukaWalletBalance(balanceAUKA)
     setCoffeeContract(coffeeContract);
 
     setWalletAddress(accounts);
