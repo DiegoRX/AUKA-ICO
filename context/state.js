@@ -211,7 +211,7 @@ const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
           console.log("Executing...");
         })
         .on("receipt", function (receipt) {
-          console.log(receipt);
+
           RequestService.postSell({
             providerUrl,
             network,
@@ -243,62 +243,147 @@ const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
         });
     }
   }
-  const transferUSDTfromORIGEN = async (data) => {
-    const {usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl} = data
-    let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
-    let weiORIGENValue = (tokenAmount * 10 ** 18).toString()
 
+  const [txReceipt, setTxReceipt] = useState('')
+  const transferUSDTfromORIGEN = async (data) => {
+    const {usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl} = data;
+    let weiUSDTValue = (usdtAmount * 10 ** 6).toString();
+    let weiORIGENValue = (tokenAmount * 10 ** 18).toString();
+  
     let ERC20_ABI = require("@config/abi/erc20.json");
     let provider = await detectEthereumProvider();
+  
     if (provider) {
       const web3Provider = new Web3(window.ethereum);
-
+  
       const transactionParameters = {
         to: TOKEN_RECEIVER_ADDRESS, // Dirección del receptor
         from: walletAddress[0], // Dirección del remitente
         value: weiORIGENValue, // Valor en wei
         gas: 210000, // Límite de gas estándar para transferencias de ETH
-        gasPrice: 2000, // Valor del gas 
+        gasPrice: await web3Provider.eth.getGasPrice() // Obtener el precio del gas actual
       };
-console.log(transactionParameters)
-      let tx = new web3Provider.eth.sendTransaction(
-        transactionParameters
-      ).on("transactionHash", function (hash) {
-          console.log("Executing...");
-        })
-        .on("receipt", function (receipt) {
-          console.log(receipt);
-          RequestService.postSell({
-            providerUrl,
-            network,
-            "networkId": String(networkId),
-            "buyerAddress": receipt.from,
-            "tokenName": tokenName,
-            "usdtReceiverAddress": TOKEN_RECEIVER_ADDRESS,
-            "tokenReceiverAddress": tokenReceiverAddress,
-            "txHash": receipt.transactionHash,
-            "usdtAddress": USDC_ADDRESS,
-            "usdtAmount": String(usdtAmount),
-            "tokenAmount": String(tokenAmount),
-            "weiUSDTValue": String(weiUSDTValue),
-            "weiTokenValue": String(weiORIGENValue),
-            "approved": true
+  
+      console.log("transactionParameters:", transactionParameters);
+  
+      try {
+        let tx = await web3Provider.eth.sendTransaction(transactionParameters)
+          .on("transactionHash", function (hash) {
+            console.log("Executing...");
+            console.log("Transaction hash:", hash);
           })
-          Swal.fire({
-            title: `${tokenAmount} $ORIGEN sent to`,
-            text: tokenReceiverAddress,
-            icon: "success"
-          });
+          .on("receipt", function (receipt) {
+            setTxReceipt( receipt);
+   // Agregar console.log antes de la llamada a postSell
+   console.log('Datos para postSell:', {
+    providerUrl,
+    network,
+    networkId: String(networkId),
+    buyerAddress: receipt.from,
+    tokenName: tokenName,
+    usdtReceiverAddress: TOKEN_RECEIVER_ADDRESS,
+    tokenReceiverAddress: tokenReceiverAddress,
+    txHash: receipt.transactionHash,
+    usdtAddress: USDT_ADDRESS,
+    usdtAmount: String(usdtAmount),
+    tokenAmount: String(tokenAmount),
+    weiUSDTValue: String(weiUSDTValue),
+    weiTokenValue: String(weiORIGENValue),
+    approved: true
+  });
 
-        })
-        .catch((revertReason) => {
-          console.log(
-            "ERROR! Transaction reverted: " +
-            revertReason.receipt
-          );
-        });
+  RequestService.postSell({
+    providerUrl,
+    network,
+    networkId: String(networkId),
+    buyerAddress: receipt.from,
+    tokenName: tokenName,
+    usdtReceiverAddress: TOKEN_RECEIVER_ADDRESS,
+    tokenReceiverAddress: tokenReceiverAddress,
+    txHash: receipt.transactionHash,
+    usdtAddress: USDT_ADDRESS,
+    usdtAmount: String(usdtAmount),
+    tokenAmount: String(tokenAmount),
+    weiUSDTValue: String(weiUSDTValue),
+    weiTokenValue: String(weiORIGENValue),
+    approved: true
+  }).then(response => {
+    // Agregar console.log después de la respuesta de postSell
+    console.log('Respuesta de postSell:', response);
+
+    Swal.fire({
+      title: `${tokenAmount} $ORIGEN sent to`,
+      text: tokenReceiverAddress,
+      icon: "success"
+    });
+  }).catch(error => {
+    // Capturar cualquier error en postSell
+    console.error('Error en postSell:', error);
+  });
+
+           
+          })
+          .on("error", function (error) {
+            console.error("Transaction error:", error);
+          });
+      } catch (error) {
+        console.error("Transaction failed:", error);
+      }
+    } else {
+      console.error("No Ethereum provider detected");
     }
-  }
+  };
+
+  useEffect(() => {
+
+    //  // Agregar console.log antes de la llamada a postSell
+    //  console.log('Datos para postSell:', {
+    //   providerUrl,
+    //   network,
+    //   networkId: String(networkId),
+    //   buyerAddress: receipt.from,
+    //   tokenName: tokenName,
+    //   usdtReceiverAddress: TOKEN_RECEIVER_ADDRESS,
+    //   tokenReceiverAddress: tokenReceiverAddress,
+    //   txHash: receipt.transactionHash,
+    //   usdtAddress: USDT_ADDRESS,
+    //   usdtAmount: String(usdtAmount),
+    //   tokenAmount: String(tokenAmount),
+    //   weiUSDTValue: String(weiUSDTValue),
+    //   weiTokenValue: String(weiORIGENValue),
+    //   approved: true
+    // });
+
+    // RequestService.postSell({
+    //   providerUrl,
+    //   network,
+    //   networkId: String(networkId),
+    //   buyerAddress: receipt.from,
+    //   tokenName: tokenName,
+    //   usdtReceiverAddress: TOKEN_RECEIVER_ADDRESS,
+    //   tokenReceiverAddress: tokenReceiverAddress,
+    //   txHash: receipt.transactionHash,
+    //   usdtAddress: USDT_ADDRESS,
+    //   usdtAmount: String(usdtAmount),
+    //   tokenAmount: String(tokenAmount),
+    //   weiUSDTValue: String(weiUSDTValue),
+    //   weiTokenValue: String(weiORIGENValue),
+    //   approved: true
+    // }).then(response => {
+    //   // Agregar console.log después de la respuesta de postSell
+    //   console.log('Respuesta de postSell:', response);
+
+    //   Swal.fire({
+    //     title: `${tokenAmount} $ORIGEN sent to`,
+    //     text: tokenReceiverAddress,
+    //     icon: "success"
+    //   });
+    // }).catch(error => {
+    //   // Capturar cualquier error en postSell
+    //   console.error('Error en postSell:', error);
+    // });
+
+  }, [txReceipt]);
 
   let sharedState = {
     connectWallet,

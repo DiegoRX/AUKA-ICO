@@ -18,13 +18,26 @@ class RequestService {
   }
 
   async postSell(data) {
+    console.log('Entrando a postSell con data:', data); // Log inicial
     try {
       const resp = await axios.post(`${this.urlServer}/sell`, data, {});
+      console.log('Respuesta de axios postSell:', resp); // Log de la respuesta
       return this.switchCase(resp);
     } catch (error) {
+      console.error('Error en axios postSell:', error); // Log de errores
+      if (error.response) {
+        console.error('Error data:', error.response.data); // Datos del error
+        console.error('Error status:', error.response.status); // Estado del error
+        console.error('Error headers:', error.response.headers); // Headers del error
+      } else if (error.request) {
+        console.error('Error request:', error.request); // Error en la solicitud
+      } else {
+        console.error('Error message:', error.message); // Mensaje de error
+      }
       return this.switchCase(error.request);
     }
   }
+
 
   async get() {
     try {
