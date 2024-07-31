@@ -21,7 +21,7 @@ const [aukaWalletBalance, setAukaWalletBalance]= useState(0);
 const [usdtWalletBalance, setusdtWalletBalance]= useState(0);
 const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
   const network = 137;
-  const USDC_ADDRESS = "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582"
+  const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
   const USDT_RECEIVER_ADDRESS = "0x3E531Ce4fd73b5a3EA86E37fbcd92e2c36490909"
   const TOKEN_RECEIVER_ADDRESS = "0x3E531Ce4fd73b5a3EA86E37fbcd92e2c36490909"
 
@@ -116,7 +116,7 @@ const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
             "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
             "tokenReceiverAddress": tokenReceiverAddress,
             "txHash": receipt.transactionHash,
-            "usdtAddress": USDC_ADDRESS,
+            "usdtAddress": USDT_ADDRESS,
             "usdtAmount": String(usdtAmount),
             "tokenAmount": String(tokenAmount),
             "weiUSDTValue": String(weiUSDTValue),
@@ -168,7 +168,7 @@ const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
             "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
             "tokenReceiverAddress": tokenReceiverAddress,
             "txHash": receipt.transactionHash,
-            "usdtAddress": USDC_ADDRESS,
+            "usdtAddress": USDT_ADDRESS,
             "usdtAmount": String(usdtAmount),
             "tokenAmount": String(tokenAmount),
             "weiUSDTValue": String(weiUSDTValue),
@@ -221,7 +221,7 @@ const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
             "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
             "tokenReceiverAddress": tokenReceiverAddress,
             "txHash": receipt.transactionHash,
-            "usdtAddress": USDC_ADDRESS,
+            "usdtAddress": USDT_ADDRESS,
             "usdtAmount": String(usdtAmount),
             "tokenAmount": String(tokenAmount),
             "weiUSDTValue": String(weiUSDTValue),
