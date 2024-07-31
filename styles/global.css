@@ -152,7 +152,7 @@
 
 .main_box {
   width: 401px;
-  height: 700px;
+  height: auto;
   color: white;
   background: #2D2D2D;
   /* border: 1px solid #dea73e; */
@@ -186,7 +186,7 @@
   }
 
   .selected-box{
-    box-shadow: rgba(0, 0, 0, 0.35) 0px -22px 36px -28px inset;  }
+    box-shadow: rgb(189, 141, 30) 0px -22px 36px -28px inset;  }
 
   h1 {
     font-weight: 1000;

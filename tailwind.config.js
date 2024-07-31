@@ -13,6 +13,12 @@ module.exports = {
         letraDark: '#FFFFFF',
         letraLight: '#000000',
       },
+      screens: {
+        'max-sm': { 'max': '420px' }, // Pantallas con ancho máximo de 639px
+        'max-md': { 'max': '767px' }, // Pantallas con ancho máximo de 767px
+        'max-lg': { 'max': '1023px' }, // Pantallas con ancho máximo de 1023px
+        'max-xl': { 'max': '1279px' }, // Pantallas con ancho máximo de 1279px
+      },
       fontFamily: { roboto: ['Roboto', 'sans-serif', 'sans']},
       keyframes: {
         spin: {

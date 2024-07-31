@@ -151,13 +151,13 @@ const Home = () => {
     if (selectedNetwork.network != '') {
       changeNetwork(selectedNetwork)
     }
-  }, [selectedNetwork, origenWalletBalance,aukaWalletBalance]);
+  }, [selectedNetwork, origenWalletBalance, aukaWalletBalance]);
   useEffect(() => {
     if (buySell === 'buy') {
-      changeNetwork({'chainIdHex':'0x89'})
+      changeNetwork({ 'chainIdHex': '0x89' })
     }
     if (buySell === 'sell') {
-      changeNetwork({'chainIdHex':'0x2154'})
+      changeNetwork({ 'chainIdHex': '0x2154' })
     }
   }, [buySell]);
   const handleImageClick = (index) => {
@@ -272,9 +272,11 @@ const Home = () => {
         <div className="main__info">
           <h2>Take control of your finalcial future</h2>
           <h3>At ordenEx, we understant the importance of staying ahead in the fast-peaced world of cryptocurrency trading.</h3>
-          <div className="flex flex-col text-center">
+          <div className="flex flex-col items-center w-full h-full">
             <img
+              className="w-2/3"
               src="https://i.postimg.cc/vmKKhfBK/Copnsv-Tcsq-Ky-of-digital-technologies-of-the-future-1-preview-rev-1.png"
+              alt="Imagen"
             />
           </div>
         </div>
@@ -370,8 +372,9 @@ const Home = () => {
                       ref={onkdReceiverAddressRef}
                     />) : null}
                 </div>
-                <div className="flex w-96">
-                  <div className="flex flex-col w-48 text-left">
+                <div className="flex max-sm:flex-col w-96">
+
+<div className="flex flex-col max-sm:w-full w-48 text-left ">
                     <p>USDT you pay</p>
                     <div className="flex w-50 input2-container">
                       <input
@@ -383,7 +386,7 @@ const Home = () => {
                       <img src={imgUrl + "tether-usdt-seeklogo.svg"} alt="x" />
                     </div>
                   </div>
-                  <div className="flex flex-col w-48 text-left">
+                  <div className="flex flex-col max-sm:w-full w-48 text-left ">
                     <p>
                       {selectedToken === 'AUKA' ? 'AUKA you receive' : selectedToken === 'ORIGEN' ? 'ORIGEN you receive' : 'Select a token'}
                     </p>                    <div className="flex w-50 input2-container">
@@ -471,12 +474,12 @@ const Home = () => {
                     ref={onkdReceiverAddressRef}
                   />
                 </div>
-                <div className="flex w-96">
+                <div className="flex max-sm:flex-col w-96">
 
-                  <div className="flex flex-col w-48 text-left">
+                  <div className="flex flex-col max-sm:w-full w-48 text-left ">
                     <p>
                       {selectedToken === 'AUKA' ? 'AUKA you sell' : selectedToken === 'ORIGEN' ? 'ORIGEN you sell' : 'Select a token'}
-                    </p>                    <div className="flex w-50 input2-container">
+                    </p>                    <div className="flex max-sm:w-full w-48 input2-container max-sm:align-center">
                       <input
                         className="input2 86"
                         type="text" placeholder="0x..."
@@ -491,9 +494,9 @@ const Home = () => {
                         <p></p>
                       )}                    </div>
                   </div>
-                  <div className="flex flex-col w-48 text-left">
+                  <div className="flex flex-col max-sm:w-full w-48 text-left">
                     <p>USDT you receive</p>
-                    <div className="flex w-50 input2-container">
+                    <div className="flex max-sm:w-full w-48 input2-container">
                       <input
                         className="input2 86"
                         type="text" placeholder="0x..."
@@ -511,7 +514,7 @@ const Home = () => {
           </div>)}
 
         </div>
-       
+
       </div>
     </div>
   );
