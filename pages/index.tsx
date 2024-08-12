@@ -141,6 +141,7 @@ const Home = () => {
   const handleNetworkChange = (event) => {
     const selectedValue = event.target.value;
     const networkData = networks[selectedValue];
+    console.log('networkData',networkData)
     setSelectedNetwork(networkData);
   };
 
