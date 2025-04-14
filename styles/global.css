@@ -8,7 +8,7 @@
 @tailwind components;
 @tailwind utilities;
 body{
-  background-color: #eeeeee !important;
+  background-color: #323232 !important;
 }
 
 .main__info {
@@ -21,14 +21,14 @@ text-align: center;
   h2 {
     font-weight: bold;
     font-size: 60px;
-    color: Black;
+    color: #dea73e;
     text-align: center;
     max-width: 800px;
   }
 
   h3 {
     font-size: 30px;
-    color: #353535;
+    color: white;
     max-width: 800px;
   }
 

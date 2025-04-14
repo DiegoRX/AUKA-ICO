@@ -17,11 +17,11 @@ const Home = () => {
   const onkdReceiverAddressRef = useRef(null)
   // console.log(walletAddress)
   const [selectedNetwork, setSelectedNetwork] = useState({
-    "providerUrl": "https://rpc-mainnet.maticvigil.com/",
-    "network": "polygon",
-    "networkId": "137",
-    "networkIdHex": "0x89",
-    "usdtAddress": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
+    "providerUrl": "https://bsc-dataseed.binance.org/",
+    "network": "bnb",
+    "networkId": "56",
+    "networkIdHex": "0x38",
+    "usdtAddress": "0x55d398326f99059ff775485246999027b3197955"
   });
 
 
@@ -141,7 +141,7 @@ const Home = () => {
   const handleNetworkChange = (event) => {
     const selectedValue = event.target.value;
     const networkData = networks[selectedValue];
-    console.log('networkData',networkData)
+    console.log('networkData', networkData)
     setSelectedNetwork(networkData);
   };
 
@@ -273,7 +273,7 @@ const Home = () => {
         <div className="main__info">
           <h2>Take control of your finalcial future</h2>
           <h3>At ordenEx, we understant the importance of staying ahead in the fast-peaced world of cryptocurrency trading.</h3>
-          
+
         </div>
         <div className="main__info2">
           {buySell === 'buy' ? (<div className="main_box">
@@ -324,10 +324,9 @@ const Home = () => {
               <form action="">
                 <div className="flex flex-col w-96 text-left ">
                   <p className="font-bold mb-0">SELECT NETWORK</p>
-                  <select className="input-container" name="network" id="network" onChange={handleNetworkChange}>                    <option value="polygon">Polygon</option>
-                    <option value="ethereum">Ethereum</option>
-                    <option value="polygon">Polygon</option>
+                  <select className="input-container" name="network" id="network" onChange={handleNetworkChange}>
                     <option value="bnb">Binance Smart Chain</option>
+
                   </select>
                 </div>
                 <div className="flex flex-col w-96 text-left ">
@@ -369,7 +368,7 @@ const Home = () => {
                 </div>
                 <div className="flex max-sm:flex-col w-96">
 
-<div className="flex flex-col max-sm:w-full w-48 text-left ">
+                  <div className="flex flex-col max-sm:w-full w-48 text-left ">
                     <p>USDT you pay</p>
                     <div className="flex w-50 input2-container">
                       <input
@@ -509,16 +508,16 @@ const Home = () => {
           </div>)}
 
         </div>
-<div className="flex flex-col items-center w-full h-full">
-            <img
-              className="w-2/3"
-              src="https://i.postimg.cc/vmKKhfBK/Copnsv-Tcsq-Ky-of-digital-technologies-of-the-future-1-preview-rev-1.png"
-              alt="Imagen"
-              style={{
-                maxWidth:'500px'
-              }}
-            />
-          </div>
+        <div className="flex flex-col items-center w-full h-full">
+          <img
+            className="w-2/3"
+            src="https://i.postimg.cc/vmKKhfBK/Copnsv-Tcsq-Ky-of-digital-technologies-of-the-future-1-preview-rev-1.png"
+            alt="Imagen"
+            style={{
+              maxWidth: '500px'
+            }}
+          />
+        </div>
       </div>
     </div>
   );
