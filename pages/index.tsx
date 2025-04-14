@@ -273,13 +273,7 @@ const Home = () => {
         <div className="main__info">
           <h2>Take control of your finalcial future</h2>
           <h3>At ordenEx, we understant the importance of staying ahead in the fast-peaced world of cryptocurrency trading.</h3>
-          <div className="flex flex-col items-center w-full h-full">
-            <img
-              className="w-2/3"
-              src="https://i.postimg.cc/vmKKhfBK/Copnsv-Tcsq-Ky-of-digital-technologies-of-the-future-1-preview-rev-1.png"
-              alt="Imagen"
-            />
-          </div>
+          
         </div>
         <div className="main__info2">
           {buySell === 'buy' ? (<div className="main_box">
@@ -515,7 +509,16 @@ const Home = () => {
           </div>)}
 
         </div>
-
+<div className="flex flex-col items-center w-full h-full">
+            <img
+              className="w-2/3"
+              src="https://i.postimg.cc/vmKKhfBK/Copnsv-Tcsq-Ky-of-digital-technologies-of-the-future-1-preview-rev-1.png"
+              alt="Imagen"
+              style={{
+                maxWidth:'500px'
+              }}
+            />
+          </div>
       </div>
     </div>
   );

@@ -7,22 +7,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+body{
+  background-color: #eeeeee !important;
+}
 
 .main__info {
   grid-column: 1 / span 1;
   grid-row: 1 / span 1;
-
+display: flex;
+width: 100%;
+justify-content: center ;
+text-align: center;
   h2 {
     font-weight: bold;
     font-size: 60px;
     color: Black;
     text-align: center;
+    max-width: 800px;
   }
 
   h3 {
     font-size: 30px;
-    color: #F3BA2F;
+    color: #353535;
+    max-width: 800px;
   }
 
   img {
@@ -456,6 +463,10 @@
   }
 
   .main__info {
+    display: flex;
+width: 100%;
+justify-content: center ;
+text-align: center;
     h2 {
       font-size: 52px;
     }
@@ -472,14 +483,17 @@
 
 @media screen and (min-width: 1000px) {
   .main__info {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    justify-content: center;  /* Alineación vertical */
+    align-items: center;      /* Alineación horizontal (centra los elementos dentro del flexbox) */
+    text-align: center;       
   }
 
   .main__bg {
-    display: grid;
-    grid-template-columns: 60% 40%;
-    grid-template-rows: auto auto;
-    gap: 10px;
+    display: flex;
+    flex-direction: column;
   }
 
   .partners {
