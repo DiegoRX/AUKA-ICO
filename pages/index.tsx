@@ -307,16 +307,31 @@ const Home = () => {
             <div className="flex  w-96 justify-around ">
               <button
                 className={`button-token ${selectedToken === 'AUKA' ? 'selected' : ''}`}
-                onClick={() => handleTokenClick('AUKA')}
+                onClick={() =>
+                  selectedWallet === 0 && walletAddress.length > 0
+                    ? handleTokenClick('AUKA')
+                    : connectWallet()
+                }
               >
-                <img src="https://www.vetawallet.com/_next/image?url=%2Fauka.png&w=48&q=75" alt="AUKA" />
+                <img
+                  src="https://www.vetawallet.com/_next/image?url=%2Fauka.png&w=48&q=75"
+                  alt="AUKA"
+                />
                 <p>AUKA</p>
               </button>
+
               <button
                 className={`button-token ${selectedToken === 'ORIGEN' ? 'selected' : ''}`}
-                onClick={() => handleTokenClick('ORIGEN')}
+                onClick={() =>
+                  selectedWallet === 0 && walletAddress.length > 0
+                    ? handleTokenClick('ORIGEN')
+                    : connectWallet()
+                }
               >
-                <img src="https://www.vetawallet.com/_next/image?url=%2Forigen.png&w=48&q=75" alt="ORIGEN" />
+                <img
+                  src="https://www.vetawallet.com/_next/image?url=%2Forigen.png&w=48&q=75"
+                  alt="ORIGEN"
+                />
                 <p>ORIGEN</p>
               </button>
             </div>
