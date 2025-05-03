@@ -3,6 +3,7 @@ module.exports = {
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx}"
   ],
   theme: {
     extend: {
@@ -19,7 +20,7 @@ module.exports = {
         'max-lg': { 'max': '1023px' }, // Pantallas con ancho máximo de 1023px
         'max-xl': { 'max': '1279px' }, // Pantallas con ancho máximo de 1279px
       },
-      fontFamily: { roboto: ['Roboto', 'sans-serif', 'sans']},
+      fontFamily: { roboto: ['Roboto', 'sans-serif', 'sans'] },
       keyframes: {
         spin: {
           '0%, 50%': { transform: 'rotate(600deg)' },
