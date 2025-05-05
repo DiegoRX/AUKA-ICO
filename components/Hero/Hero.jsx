@@ -5,6 +5,7 @@ import { loadSlim } from "@tsparticles/slim";
 
 const Hero = () => {
     const [init, setInit] = useState(false);
+    const [mode, setMode] = useState('buy');
 
     // this should be run only once per application lifetime
     useEffect(() => {
@@ -129,47 +130,99 @@ const Hero = () => {
                     </div>
 
                     {/* Right: Card */}
-                    <div className="bg-gray-800 rounded-xl shadow-lg w-[400px] p-6 space-y-4">
-                        <div className="flex space-x-2">
-                            <button className="flex-1 bg-gray-700 rounded py-2 font-bold">Comprar</button>
-                            <button className="flex-1 hover:bg-gray-700 rounded py-2 text-gray-400">Vender</button>
+                    <div className="w-[400px] rounded-xl shadow-lg overflow-hidden ">
+                        {/* Tabs */}
+                        <div className="flex">
+                            <button
+                                onClick={() => setMode('buy')}
+                                className={`flex-1 py-3 text-sm font-semibold ${mode === 'buy'
+                                    ? 'bg-[#16191C] text-white'
+                                    : 'bg-[#101214] text-gray-400 hover:bg-[#16191C]'
+                                    }`}
+                            >
+                                buy
+                            </button>
+                            <button
+                                onClick={() => setMode('sell')}
+                                className={`flex-1 py-3 text-sm font-semibold ${mode === 'sell'
+                                    ? 'bg-[#16191C] text-white'
+                                    : 'bg-[#101214] text-gray-400 hover:bg-[#16191C]'
+                                    }`}
+                            >
+                                sell
+                            </button>
                         </div>
 
-                        <div className="mt-6">
-                            <label className="block text-sm text-gray-400">Compra con</label>
-                            <select className="w-full mt-1 bg-gray-700 text-white p-2 rounded">
-                                <option>USD - US Dollar</option>
-                            </select>
-                        </div>
-
-                        <div className="mt-6">
-                            <label className="block text-sm text-gray-400">Activo</label>
-                            <div className="mt-1 bg-gray-700 p-2 rounded flex items-center justify-between">
-                                <span>Ethereum</span>
-                                <span>→</span>
-                            </div>
-                        </div>
-
-                        <button className="w-full bg-gray-600 py-2 rounded mt-6">Conectar Billetera</button>
-
-                        <div className="mt-6">
-                            <p className="text-sm text-gray-400 mb-2">Proveedores Disponibles</p>
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between bg-gray-700 p-2 rounded">
-                                    <span>Banxa</span> <span>→</span>
-                                </div>
-                                <div className="flex items-center justify-between bg-gray-700 p-2 rounded">
-                                    <span>Rampa de entrada</span>
-                                    <span className="bg-gray-600 text-xs px-2 py-0.5 rounded-full">AGGREGATOR</span>
-                                </div>
-                                <div className="flex items-center justify-between bg-gray-700 p-2 rounded">
-                                    <span>Mt Pelerin</span>
-                                    <div className="flex gap-1">
-                                        <span className="bg-gray-600 text-xs px-2 py-0.5 rounded-full">SIN KYC</span>
-                                        <span className="bg-gray-600 text-xs px-2 py-0.5 rounded-full">NO-USA</span>
+                        {/* Contenido de la tarjeta */}
+                        <div className="bg-[#16191C] p-6 space-y-4">
+                            {mode === 'buy' ? (
+                                <div>
+                                    <div>
+                                        <label className="block text-sm text-gray-400">
+                                            Buy
+                                        </label>
+                                        <select className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border-[1px] border-[rgba(255,255,255,0.16)]">
+                                            <option>USDT - Binance Pay</option>
+                                            <option>BNB - Metamask</option>
+                                            <option>Credit / Debit card</option>
+                                        </select>
                                     </div>
+
+                                    <div>
+                                        <label className="block text-sm text-gray-400">Token</label>
+                                        <select className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border-[1px] border-[rgba(255,255,255,0.16)]">
+                                            <option>ONDK</option>
+                                            <option>AGKA</option>
+                                            <option>AUKA</option>
+                                            <option>ORIGEN</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-gray-400">
+                                            Spend
+                                        </label>
+                                        <input className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border-[1px] border-[rgba(255,255,255,0.16)]" />
+
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-gray-400">
+                                            Receive
+                                        </label>
+                                        <input className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border-[1px] border-[rgba(255,255,255,0.16)]" />
+
+                                    </div>
+                                    <button className="w-full bg-gray-600 py-2 mt-3 rounded">Conect Wallet</button>
+
+
                                 </div>
-                            </div>
+                            ) : (
+                                <div>
+                                    <div>
+                                        <label className="block text-sm text-gray-400">
+                                            SELL
+                                        </label>
+                                        <select className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border-[1px] border-[rgba(255,255,255,0.16)]">
+                                            <option>USDT - Binance Pay</option>
+                                            <option>BNB - Metamask</option>
+                                            <option>Credit / Debit card</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm text-gray-400">Activo</label>
+                                        <select className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border-[1px] border-[rgba(255,255,255,0.16)]">                                    <option>ORIGEN</option>
+                                            <option>ONDK</option>
+                                            <option>AGKA</option>
+                                            <option>AUKA</option>
+                                        </select>
+                                    </div>
+
+                                    <button className="w-full bg-gray-600 py-2 rounded mt-3 ">Conect Wallet</button>
+
+
+                                </div>
+                            )}
+
                         </div>
                     </div>
                 </div>

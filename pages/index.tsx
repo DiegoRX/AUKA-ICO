@@ -72,7 +72,7 @@ const Home = () => {
   };
   return (
     <div className="flex h-screen bg-gray-900 text-white">
-      <aside className="fixed bottom-0 left-0 w-full h-16 bg-gray-800 flex justify-around items-center z-30 md:hidden">
+      <aside className="fixed bottom-0 left-0 w-full h-16 bg-[#0D0F11] flex justify-around items-center z-30 md:hidden">
         <button className="flex flex-col items-center text-white text-sm">
           <MdOutlineCurrencyExchange className="text-2xl" />
           <span className="text-xs">Trade</span>
@@ -91,7 +91,7 @@ const Home = () => {
         </button>
       </aside>
 
-      <aside className="hidden md:flex flex-col bg-gray-800 h-screen w-20 lg:w-64 p-4 space-y-4 z-30">
+      <aside className="hidden md:flex flex-col bg-[#0D0F11] h-screen w-20 lg:w-64 p-4 space-y-4 z-30">
         {/* Logo */}
         <div className="flex justify-center mb-4">
           <Image src="https://i.ibb.co/ZJKFjCd/ordenex-logo.png" height={80} width={80} alt="ordenex-logo" />
@@ -127,7 +127,7 @@ const Home = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden ">
         {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4 bg-gray-850 border-b border-gray-700  z-20">
+        <header className="flex items-center justify-between px-6 py-4 bg-[#0D0F11] border-b border-gray-700  z-20">
           <input
             type="text"
             placeholder="🔍 Búsqueda"
