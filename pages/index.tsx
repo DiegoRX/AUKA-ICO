@@ -13,6 +13,7 @@ const Home = () => {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [showLoginForm, setShowLoginForm] = useState(false);
+  const [address, setAddress] = useState('')
   const { register, handleSubmit, formState: { errors } } = useForm({
     mode: "onBlur",
   });
@@ -49,13 +50,19 @@ const Home = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
+
       });
       switch (res.status) {
         case 200:
           const json = await res.json();
           const decrypt = await jwtVerify(json.token, new TextEncoder().encode("secreto"));
-          console.log(decrypt.payload.address)
+          const address = decrypt.payload.address;
+          if (typeof address === "string") {
+            setAddress(address);
+          }
           Swal.close();
+          setShowModal(false);
+          setShowLoginForm(false);
           break;
         case 401:
           console.log("Incorrect email or password");
@@ -140,7 +147,7 @@ const Home = () => {
           </button>
         </header>
 
-        <Hero />
+        <Hero address={address} setShowModal={setShowModal} />
         {/* Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
