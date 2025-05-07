@@ -216,7 +216,7 @@ const Hero = ({ address, setShowModal }) => {
                                         <input className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border border-white/10" />
                                     </div>
 
-                                    <button className="w-full bg-gray-600 py-2 mt-3 rounded">Connect Wallet</button>
+                                    <button className="w-full bg-gray-600 py-2 mt-3 rounded">Connect VetaWallet</button>
                                 </div>
                             ) : (
                                 <div>
@@ -246,7 +246,7 @@ const Hero = ({ address, setShowModal }) => {
                                         <label className="block text-sm text-gray-400">USDT you receive</label>
                                         <div className="text-white mt-1">{sellUSDTAmount.toFixed(2)}</div>
                                     </div>
-                                    {(address != '') ? <button onClick={() => sellTokens()} className="w-full bg-gray-600 py-2 mt-3 rounded">Buy Tokens</button> : <button onClick={() => setShowModal(true)} className="w-full bg-gray-600 py-2 mt-3 rounded">Connect Wallet</button>}
+                                    {(address != '') ? <button onClick={() => sellTokens()} className="w-full bg-gray-600 py-2 mt-3 rounded">Buy Tokens</button> : <button onClick={() => setShowModal(true)} className="w-full bg-gray-600 py-2 mt-3 rounded">Connect VetaWallet</button>}
                                 </div>
                             )}
                         </div>
