@@ -1,20 +1,44 @@
 /** @type {import('next').NextConfig} */
 module.exports = {
-  env:{
+  env: {
     API_CM: process.env.API_CM,
     ONDK_PRIVATE_KEY: process.env.ONDK_PRIVATE_KEY,
     AUKA_PRIVATE_KEY: process.env.AUKA_PRIVATE_KEY,
     USDT_PRIVATE_KEY: process.env.USDT_PRIVATE_KEY,
   },
-    images: {
-      formats: ['image/avif', 'image/webp'],
-      remotePatterns: [
-        {
-          protocol: 'https',
-          hostname: '*',
-          port: '',
-          pathname: '/**',
-        },
-      ],
-    },
-  }
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'www.vetawallet.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
+}/** @type {import('next').NextConfig} */
+module.exports = {
+  env: {
+    API_CM: process.env.API_CM,
+    ONDK_PRIVATE_KEY: process.env.ONDK_PRIVATE_KEY,
+    AUKA_PRIVATE_KEY: process.env.AUKA_PRIVATE_KEY,
+    USDT_PRIVATE_KEY: process.env.USDT_PRIVATE_KEY,
+  },
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'www.vetawallet.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.ibb.co',
+        pathname: '/**',
+      },
+    ],
+  },
+}

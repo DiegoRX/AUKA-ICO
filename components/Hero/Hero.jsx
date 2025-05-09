@@ -5,6 +5,8 @@ import { loadSlim } from "@tsparticles/slim";
 import Cookies from "js-cookie";
 import { useAppContext } from "@context/state";
 import Swal from 'sweetalert2'
+import TokenSelect from "@components/TokenSelect";
+import TokenTable from "@components/TokenTable";
 
 const Hero = ({ address, setShowModal }) => {
     const [init, setInit] = useState(false);
@@ -42,17 +44,15 @@ const Hero = ({ address, setShowModal }) => {
             setInit(true);
         });
     }, []);
-
-    // Obtener el precio según el token seleccionado
-    const getTokenPrice = () => {
-        switch (selectedToken) {
-            case "AUKA": return AUKAPrice;
-            case "AGKA": return AGKAPrice;
-            case "ONDK": return ONDKPrice;
-            case "ORIGEN": return ORIGENPrice;
-            default: return 0;
-        }
+    const tokenPrices = {
+        ORIGEN: ORIGENPrice,
+        ONDK: ONDKPrice,
+        AGKA: AGKAPrice,
+        AUKA: AUKAPrice,
     };
+    // Obtener el precio según el token seleccionado
+    const getTokenPrice = (token = selectedToken) => tokenPrices[token] || 0;
+
 
     // Manejar cambios de amount o token
     const handleAmountChange = (e) => {
@@ -140,16 +140,17 @@ const Hero = ({ address, setShowModal }) => {
 
     if (init) {
         return (
-            <main className="flex-1 overflow-y-auto p-10 bg-gradient-to-b from-black via-gray-900 to-gray-950 flex items-center">
+            <main className="h-screen overflow-y-auto bg-gradient-to-b from-black via-gray-900 to-gray-950 flex flex-col">
                 <Particles
                     id="tsparticles"
                     className="!absolute !inset-0 !h-full !w-full"
                     particlesLoaded={particlesLoaded}
                     options={options}
                 />
-                <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8 w-full z-20">
-                    {/* Hero Text */}
-                    <div className="max-w-xl text-center lg:text-left">
+
+                {/* Contenido principal: Texto + Card */}
+                <div className="relative z-10 flex-1 flex flex-col lg:flex-row items-center justify-between max-w-6xl mx-auto w-full px-4 py-10 h-[100vh]">                    {/* Hero Text */}
+                    <div className="max-w-xl text-center lg:text-left ">
                         <h1 className="text-5xl sm:text-6xl md:text-6xl lg:text-[60px] font-bold leading-tight lg:leading-[1.2]">
                             Buy Crypto Tokens<br />
                             <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-transparent bg-clip-text">
@@ -162,95 +163,103 @@ const Hero = ({ address, setShowModal }) => {
                     </div>
 
                     {/* Buy/Sell Card */}
-                    <div className="w-[400px] rounded-xl shadow-lg overflow-hidden ">
-                        <div className="flex">
-                            <button
-                                onClick={() => setMode('buy')}
-                                className={`flex-1 py-3 text-sm font-semibold ${mode === 'buy'
-                                    ? 'bg-[#16191C] text-white'
-                                    : 'bg-[#101214] text-gray-400 hover:bg-[#16191C]'
-                                    }`}
-                            >
-                                BUY
-                            </button>
-                            <button
-                                onClick={() => setMode('sell')}
-                                className={`flex-1 py-3 text-sm font-semibold ${mode === 'sell'
-                                    ? 'bg-[#16191C] text-white'
-                                    : 'bg-[#101214] text-gray-400 hover:bg-[#16191C]'
-                                    }`}
-                            >
-                                SELL
-                            </button>
-                        </div>
+                    <div className="w-[400px] rounded-xl shadow-lg overflow-hidden">
+                        {/* Buy/Sell Card */}
+                        <div className="w-[400px] rounded-xl shadow-lg overflow-hidden ">
+                            <div className="flex">
+                                <button
+                                    onClick={() => setMode('buy')}
+                                    className={`flex-1 py-3 text-xl font-semibold ${mode === 'buy'
+                                        ? 'bg-[#16191C] text-white'
+                                        : 'bg-[#101214] text-gray-400 hover:bg-[#16191C]'
+                                        }`}
+                                >
+                                    BUY
+                                </button>
+                                <button
+                                    onClick={() => setMode('sell')}
+                                    className={`flex-1 py-3 text-xl font-semibold ${mode === 'sell'
+                                        ? 'bg-[#16191C] text-white'
+                                        : 'bg-[#101214] text-gray-400 hover:bg-[#16191C]'
+                                        }`}
+                                >
+                                    SELL
+                                </button>
+                            </div>
 
-                        <div className="bg-[#16191C] p-6 space-y-4">
-                            {mode === 'buy' ? (
-                                <div>
+                            <div className="bg-[#16191C] p-6 space-y-4">
+                                {mode === 'buy' ? (
                                     <div>
-                                        <label className="block text-sm text-gray-400">Buy</label>
-                                        <select className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border border-white/10">
-                                            <option>USDT - Binance Pay</option>
-                                            <option>BNB - Metamask</option>
-                                            <option>Credit / Debit card</option>
-                                        </select>
-                                    </div>
+                                        <div>
+                                            <label className="block text-xl text-gray-400">Buy</label>
+                                            <select className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border border-white/10">
+                                                <option>USDT - Binance Pay</option>
+                                                <option>BNB - Metamask</option>
+                                                <option>Credit / Debit card</option>
+                                            </select>
+                                        </div>
 
-                                    <div>
-                                        <label className="block text-sm text-gray-400">Token</label>
-                                        <select className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border border-white/10">
-                                            <option>ONDK - ${ONDKPrice} USDT</option>
-                                            <option>AGKA - ${AGKAPrice} USDT</option>
-                                            <option>AUKA - ${AUKAPrice} USDT</option>
-                                            <option>ORIGEN - ${ORIGENPrice.toFixed(4)} USDT</option>
-                                        </select>
-                                    </div>
+                                        <div>
+                                            <label className="block text-xl text-gray-400">Token</label>
+                                            <TokenSelect
+                                                selectedToken={selectedToken}
+                                                onChange={handleTokenChange}
+                                                prices={tokenPrices}
+                                            />
+                                        </div>
 
-                                    <div>
-                                        <label className="block text-sm text-gray-400">Spend</label>
-                                        <input className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border border-white/10" />
-                                    </div>
+                                        <div>
+                                            <label className="block text-xl text-gray-400">Spend USDT</label>
+                                            <input className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border border-white/10" />
+                                        </div>
 
-                                    <div>
-                                        <label className="block text-sm text-gray-400">Receive</label>
-                                        <input className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border border-white/10" />
-                                    </div>
+                                        <div>
+                                            <label className="block text-xl text-gray-400">Receive</label>
+                                            <input className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border border-white/10" />
+                                        </div>
 
-                                    <button className="w-full bg-gray-600 py-2 mt-3 rounded">Connect VetaWallet</button>
-                                </div>
-                            ) : (
-                                <div>
-                                    <div>
-                                        <label className="block text-sm text-gray-400">Sell Token</label>
-                                        <select
-                                            className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border border-white/10"
-                                            value={selectedToken}
-                                            onChange={handleTokenChange}
-                                        >
-                                            <option value="ORIGEN">ORIGEN</option>
-                                            <option value="ONDK">ONDK</option>
-                                            <option value="AGKA">AGKA</option>
-                                            <option value="AUKA">AUKA</option>
-                                        </select>
+                                        <button className="w-full bg-gray-600 py-2 mt-3 rounded">Connect VetaWallet</button>
                                     </div>
+                                ) : (
                                     <div>
-                                        <label className="block text-sm text-gray-400">Amount</label>
-                                        <input
-                                            type="text"
-                                            className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border border-white/10"
-                                            value={sellTokenAmount}
-                                            onChange={handleAmountChange}
-                                        />
+                                        <div>
+                                            <label className="block text-xl text-gray-400">Sell Token</label>
+                                            <TokenSelect
+                                                selectedToken={selectedToken}
+                                                onChange={handleTokenChange}
+                                                prices={tokenPrices}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xl text-gray-400">Spend</label>
+                                            <input
+                                                type="text"
+                                                className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border border-white/10 text-xl "
+                                                value={sellTokenAmount}
+                                                onChange={handleAmountChange}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xl text-gray-400">USDT you receive</label>
+                                            <div className="text-white mt-0 text-right text-3xl ">${sellUSDTAmount.toFixed(2)}</div>
+                                        </div>
+                                        {(address != '') ? (<>
+                                            <div>
+                                                <label className="block text-xl text-gray-400">VetaWallet Receiver Address</label>
+                                                <div className="text-white mt-1">{address}</div>
+                                            </div>
+                                        </>) : (<></>)}
+                                        {(address != '') ? <button onClick={() => sellTokens()} className="w-full bg-gray-600 py-2 mt-3 rounded text-xl ">Buy Tokens</button> : <button onClick={() => setShowModal(true)} className="w-full bg-gray-600 py-2 mt-3 rounded text-xl ">Connect VetaWallet</button>}
                                     </div>
-                                    <div>
-                                        <label className="block text-sm text-gray-400">USDT you receive</label>
-                                        <div className="text-white mt-1">{sellUSDTAmount.toFixed(2)}</div>
-                                    </div>
-                                    {(address != '') ? <button onClick={() => sellTokens()} className="w-full bg-gray-600 py-2 mt-3 rounded">Buy Tokens</button> : <button onClick={() => setShowModal(true)} className="w-full bg-gray-600 py-2 mt-3 rounded">Connect VetaWallet</button>}
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                {/* TokenTable debajo del contenido principal */}
+                <div className="relative z-10 w-full max-w-6xl mx-auto px-4 pb-20">
+                    <TokenTable prices={tokenPrices} />
                 </div>
             </main>
         );
