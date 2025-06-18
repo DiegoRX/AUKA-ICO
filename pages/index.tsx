@@ -83,6 +83,7 @@ const Home = () => {
         <button className="flex flex-col items-center text-white text-sm">
           <MdOutlineCurrencyExchange className="text-2xl" />
           <span className="text-xs">Trade</span>
+
         </button>
         <button className="flex flex-col items-center text-white text-sm">
           <MdAccountBalanceWallet className="text-2xl" />
