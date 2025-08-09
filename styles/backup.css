@@ -8,7 +8,7 @@
 @tailwind components;
 @tailwind utilities;
 body{
-  background-color: #323232 !important;
+  background-color: #05071c !important;
 }
 
 .main__info {

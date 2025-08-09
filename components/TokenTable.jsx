@@ -42,7 +42,7 @@ export default function TokenTable({ prices }) {
                         <th className="px-4 py-3">24h Variation</th>
                     </tr>
                 </thead>
-                <tbody className="bg-gray-900 divide-y divide-gray-700">
+                <tbody className="bg-[#05071c] divide-y divide-gray-700">
                     {tokens.map((token, idx) => (
                         <tr key={idx}>
                             <td className="px-4 py-3 flex items-center gap-2">

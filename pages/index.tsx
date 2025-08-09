@@ -99,10 +99,10 @@ const Home = () => {
         </button>
       </aside>
 
-      <aside className="hidden md:flex flex-col bg-[#0D0F11] h-screen w-20 lg:w-64 p-4 space-y-4 z-30">
+      <aside className="hidden md:flex flex-col bg-[#0b1133] h-screen w-20 lg:w-64 p-4 space-y-4 z-30">
         {/* Logo */}
         <div className="flex justify-center mb-4">
-          <Image src="https://i.ibb.co/ZJKFjCd/ordenex-logo.png" height={80} width={80} alt="ordenex-logo" />
+          <Image src="https://i.ibb.co/gCZbXXK/logordenex.png" height={80} width={80} alt="ordenex-logo" />
         </div>
 
         {/* Navigation */}
@@ -143,7 +143,7 @@ const Home = () => {
           />
           <button
             onClick={() => setShowModal(true)}
-            className="bg-gray-700 px-4 py-2 rounded"
+            className="bg-[rgb(0,190,255)] text-white px-4 py-2 mt-3 rounded-full "
           >   Connect Wallet
           </button>
         </header>
