@@ -2,16 +2,16 @@ import detectEthereumProvider from "@metamask/detect-provider";
 // import COFFEE_ABI from "@config/abi/Coffee.json";
 import Web3 from "web3";
 
-const BSC_PARAMS = {
-  chainId: "0x38", // 56 en decimal
-  chainName: "Binance Smart Chain",
+const POLYGON_PARAMS = {
+  chainId: "0x89", // 137 en decimal
+  chainName: "Polygon Mainnet",
   nativeCurrency: {
-    name: "BNB",
-    symbol: "BNB",
+    name: "MATIC",
+    symbol: "MATIC",
     decimals: 18,
   },
-  rpcUrls: ["https://bsc-dataseed.binance.org/"],
-  blockExplorerUrls: ["https://bscscan.com/"],
+  rpcUrls: ["https://polygon-rpc.com/"],
+  blockExplorerUrls: ["https://polygonscan.com/"],
 };
 
 const getBlockchain = () =>
@@ -31,11 +31,11 @@ const getBlockchain = () =>
 
       // Verifica y cambia la red a BNB Smart Chain si es necesario
       const currentChainId = await provider.request({ method: "eth_chainId" });
-      if (currentChainId !== BSC_PARAMS.chainId) {
+      if (currentChainId !== POLYGON_PARAMS.chainId) {
         try {
           await provider.request({
             method: "wallet_switchEthereumChain",
-            params: [{ chainId: BSC_PARAMS.chainId }],
+            params: [{ chainId: POLYGON_PARAMS.chainId }],
           });
         } catch (switchError) {
           // Si la red no está agregada, intenta agregarla
@@ -43,7 +43,7 @@ const getBlockchain = () =>
             try {
               await provider.request({
                 method: "wallet_addEthereumChain",
-                params: [BSC_PARAMS],
+                params: [POLYGON_PARAMS],
               });
             } catch (addError) {
               return reject("Failed to add BSC network to MetaMask.");
@@ -58,9 +58,10 @@ const getBlockchain = () =>
       const web3Provider = new Web3(window.ethereum);
       const addresses = await web3Provider.eth.getAccounts();
 
-      console.log("Connected to Binance Smart Chain!");
+      console.log("Connected to blockchain!");
 
       resolve({
+        currentChainId,
         accounts,
         addresses,
         web3Provider,

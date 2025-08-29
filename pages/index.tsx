@@ -9,6 +9,9 @@ import { FaRegEye } from "react-icons/fa";
 import { FaRegEyeSlash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { MdOutlineCurrencyExchange, MdAccountBalanceWallet, MdSearch, MdSettings } from 'react-icons/md';
+import getBlockchain from "@context/ethereum";
+import { useAppContext } from "@context/state";
+
 const Home = () => {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
@@ -19,6 +22,7 @@ const Home = () => {
   });
   const [showPassword, setShowPassword] = useState(false); // Estado para controlar la visibilidad de la contraseña
   const togglePasswordVisibility = () => setShowPassword((prev) => !prev); // Función para alternar la visibilidad
+  const { connectWallet, walletAddress, transferAUKA, buyORIGEN, ondkBalance, transferUSDTfromAUKA, transferUSDTfromORIGEN, aukaWalletBalance, origenWalletBalance, usdtWalletBalance } = useAppContext();
 
   const submitHandler = async (data) => {
     Swal.fire({
@@ -141,11 +145,16 @@ const Home = () => {
             placeholder="🔍 Búsqueda"
             className="bg-gray-700 text-white px-4 py-2 rounded w-1/2 placeholder-gray-400"
           />
-          <button
-            onClick={() => setShowModal(true)}
+          {walletAddress.length > 0 ? (<button
+            onClick={() => connectWallet()}
+            className="bg-gray-700 px-4 py-2 rounded"
+          >   {walletAddress}
+          </button>) : (<button
+            onClick={() => connectWallet()}
             className="bg-gray-700 px-4 py-2 rounded"
           >   Connect Wallet
-          </button>
+          </button>)}
+
         </header>
 
         <Hero address={address} setShowModal={setShowModal} />

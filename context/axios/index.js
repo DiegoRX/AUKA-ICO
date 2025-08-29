@@ -5,7 +5,7 @@ class RequestService {
   constructor() {
     /* */
     this.version = 'tokens';
-    this.urlServer = 'https://usdt-ico-d1866abb8067.herokuapp.com/txs';
+    this.urlServer = 'https://ico-back-0f689793b1b5.herokuapp.com/txs';
   }
 
   async post(data) {
@@ -76,7 +76,7 @@ class RequestService {
   async updatePriceHistory(address, data) {
     try {
       const resp = await axios.put(`${this.urlServer}${this.version}/${address}/price`, data, {
-    
+
       });
       return this.switchCase(resp);
     } catch (error) {

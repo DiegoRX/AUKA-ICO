@@ -17,47 +17,92 @@ export function AppWrapper({ children }) {
   const [accounts, setAccounts] = useState();
   const [WMATIC_ADDRESS, setWMATIC_ADDRESS] = useState('');
   const [ondkBalance, setOndkBalance] = useState(0);
-const [aukaWalletBalance, setAukaWalletBalance]= useState(0);
-const [usdtWalletBalance, setusdtWalletBalance]= useState(0);
-const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
+  const [aukaWalletBalance, setAukaWalletBalance] = useState(0);
+  const [usdtWalletBalance, setusdtWalletBalance] = useState(0);
+  const [origenWalletBalance, setOrigenWalletBalance] = useState(0);
+  const [currentChainId, setCurrentChainId] = useState(0)
   const network = 137;
   const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
-  const USDT_RECEIVER_ADDRESS = "0x3E531Ce4fd73b5a3EA86E37fbcd92e2c36490909"
-  const TOKEN_RECEIVER_ADDRESS = "0x3E531Ce4fd73b5a3EA86E37fbcd92e2c36490909"
+  const USDT_RECEIVER_ADDRESS = "0xf4435beb6daf20265d39284ad2501808c0af6c1d"
+  const TOKEN_RECEIVER_ADDRESS = "0xf209ff2a16fa367161e455f3b7f90e067eddafa9"
 
   const AUKA_ADDRESS = "0x6Facc8Df79cEDc6C5065442ce27e915Aa3a26B9B"
 
   const connectWallet = async () => {
+    // Tu lógica actual para conectar está bien
     const {
+      currentChainId,
       accounts,
       WMATIC_ADDRESS,
       web3Provider,
     } = await getBlockchain();
+
+    // Asumo que getWalletBalances depende de que la conexión ya esté hecha
     const {
       balanceUSDT,
       balanceORIGEN,
       balanceAUKA
     } = await getWalletBalances();
-    setOrigenWalletBalance(balanceORIGEN)
-    setusdtWalletBalance(balanceUSDT)
-    setAukaWalletBalance(balanceAUKA)
-    setCoffeeContract(coffeeContract);
 
+    setOrigenWalletBalance(balanceORIGEN);
+    setusdtWalletBalance(balanceUSDT);
+    setAukaWalletBalance(balanceAUKA);
+    // setCoffeeContract(coffeeContract); // Asegúrate que esta variable esté definida
+    setCurrentChainId(currentChainId);
     setWalletAddress(accounts);
     setWMATIC_ADDRESS(WMATIC_ADDRESS);
-
     setWeb3(web3Provider);
     setAccounts(accounts);
-
   };
 
+  // --- REEMPLAZA TU USEEFFECT CON ESTOS DOS ---
 
-
+  // Efecto 1: Intenta conectar la billetera al cargar la página
   useEffect(() => {
-    connectWallet();
+    // Intenta conectar automáticamente si el usuario ya ha dado permisos
+    if (window.ethereum && window.ethereum.selectedAddress) {
+      connectWallet();
+    }
+  }, []); // Se ejecuta solo una vez al montar el componente
 
+  // Efecto 2: Escucha los cambios de red y de cuenta
+  useEffect(() => {
+    // Verifica si MetaMask está instalado
+    if (window.ethereum) {
+      // --- Listener para el cambio de red ---
+      const handleChainChanged = (chainId) => {
+        console.log("Red cambiada a:", chainId);
+        setCurrentChainId(chainId)
+        // Recargar la página es la forma más segura de asegurar que el estado de la DApp se reinicie correctamente.
+
+      };
+
+      // --- Listener para el cambio de cuenta ---
+      const handleAccountsChanged = (accounts) => {
+        console.log("Cuenta cambiada a:", accounts[0]);
+        if (accounts.length > 0) {
+          // Si el usuario cambia de cuenta, vuelve a conectar para actualizar los saldos y datos.
+          connectWallet();
+        } else {
+          // El usuario se ha desconectado
+          // Aquí deberías limpiar el estado de la billetera.
+          setWalletAddress([]);
+          setAccounts([]);
+          // ...etc
+        }
+      };
+
+      // Adjuntar los listeners
+      window.ethereum.on('chainChanged', handleChainChanged);
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+
+      // Función de limpieza para remover los listeners cuando el componente se desmonte
+      return () => {
+        window.ethereum.removeListener('chainChanged', handleChainChanged);
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      };
+    }
   }, []);
-
 
 
   const getAUKABalance = async () => {
@@ -70,7 +115,7 @@ const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
         AUKA_ADDRESS
       );
       const aukaWalletBalance = await AUKAContract.methods.balanceOf('0x8E839Af7A405f49bf72B239929b8ee3c07Ee7ba0').call()
-      setAukaWalletBalance(Number(aukaWalletBalance)/10 ** 18)
+      setAukaWalletBalance(Number(aukaWalletBalance) / 10 ** 18)
       const resultApprove = await AUKAContract.methods.balanceOf(walletAddress[0]).call()
       let finalBalance = resultApprove / 10 ** 18
       setOndkBalance(finalBalance)
@@ -79,18 +124,18 @@ const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
   }
   getAUKABalance()
   const transferAUKA = async (data) => {
-    const {usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl} = data
+    const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data
     if (isNaN(usdtAmount) || isNaN(tokenAmount)) {
       console.error("Invalid input: usdtAmount or tokenAmount is not a number");
       return;
     }
-  
+
     let weiUSDTValue = (usdtAmount * 10 ** 6);
     let weiAUKAValue = (tokenAmount * 10 ** 18);
-  
+
     // console.log("USDT Value (in wei):", weiUSDTValue);
     // console.log("Token Value (in wei):", weiAUKAValue);
-  
+
     let ERC20_ABI = require("@config/abi/erc20.json");
     let provider = await detectEthereumProvider();
     if (provider) {
@@ -138,22 +183,22 @@ const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
         });
     }
   }
-  const transferORIGEN = async (data) => {
-    const {usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl} = data
+  const buyORIGEN = async (data) => {
+    const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data
     let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
     let weiORIGENValue = (tokenAmount * 10 ** 18).toString()
-
+    console.log(usdtAddress, walletAddress[0], USDT_RECEIVER_ADDRESS)
     let ERC20_ABI = require("@config/abi/erc20.json");
     let provider = await detectEthereumProvider();
     if (provider) {
       const web3Provider = new Web3(window.ethereum);
-      let USDCContract = new web3Provider.eth.Contract(
+      let USDTContract = new web3Provider.eth.Contract(
         ERC20_ABI,
         usdtAddress
       );
-      const resultApprove = await USDCContract.methods
+      const resultApprove = await USDTContract.methods
         .transfer(USDT_RECEIVER_ADDRESS, weiUSDTValue)
-        .send({ from: walletAddress[0], gas: 0, value: 0 })
+        .send({ from: walletAddress[0] })
         .on("transactionHash", function (hash) {
           console.log("Executing...");
         })
@@ -183,19 +228,21 @@ const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
 
         })
         .catch((revertReason) => {
-          console.log(
-            "ERROR! Transaction reverted: " +
-            revertReason.receipt
-          );
+          console.error("ERROR! Transaction reverted: ", revertReason);
+          Swal.fire({
+            title: "Transacción Fallida",
+            text: "La transacción fue rechazada o ha ocurrido un error. Por favor, inténtalo de nuevo.",
+            icon: "error"
+          });
         });
     }
   }
 
   const transferUSDTfromAUKA = async (data) => {
-    const {usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl} = data
+    const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data
     let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
     let weiAUKAValue = (tokenAmount * 10 ** 18).toString()
-// console.log(weiAUKAValue)
+    // console.log(weiAUKAValue)
     let ERC20_ABI = require("@config/abi/erc20.json");
     let provider = await detectEthereumProvider();
     if (provider) {
@@ -246,16 +293,16 @@ const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
 
   const [txReceipt, setTxReceipt] = useState('')
   const transferUSDTfromORIGEN = async (data) => {
-    const {usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl} = data;
+    const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data;
     let weiUSDTValue = (usdtAmount * 10 ** 6).toString();
     let weiORIGENValue = (tokenAmount * 10 ** 18).toString();
-  
+
     let ERC20_ABI = require("@config/abi/erc20.json");
     let provider = await detectEthereumProvider();
-  
+
     if (provider) {
       const web3Provider = new Web3(window.ethereum);
-  
+
       const transactionParameters = {
         to: TOKEN_RECEIVER_ADDRESS, // Dirección del receptor
         from: walletAddress[0], // Dirección del remitente
@@ -263,9 +310,9 @@ const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
         gas: 210000, // Límite de gas estándar para transferencias de ETH
         gasPrice: await web3Provider.eth.getGasPrice() // Obtener el precio del gas actual
       };
-  
+
       console.log("transactionParameters:", transactionParameters);
-  
+
       try {
         let tx = await web3Provider.eth.sendTransaction(transactionParameters)
           .on("transactionHash", function (hash) {
@@ -273,55 +320,55 @@ const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
             console.log("Transaction hash:", hash);
           })
           .on("receipt", function (receipt) {
-            setTxReceipt( receipt);
-   // Agregar console.log antes de la llamada a postSell
-   console.log('Datos para postSell:', {
-    providerUrl,
-    network,
-    networkId: String(networkId),
-    buyerAddress: receipt.from,
-    tokenName: tokenName,
-    usdtReceiverAddress: TOKEN_RECEIVER_ADDRESS,
-    tokenReceiverAddress: tokenReceiverAddress,
-    txHash: receipt.transactionHash,
-    usdtAddress: USDT_ADDRESS,
-    usdtAmount: String(usdtAmount),
-    tokenAmount: String(tokenAmount),
-    weiUSDTValue: String(weiUSDTValue),
-    weiTokenValue: String(weiORIGENValue),
-    approved: true
-  });
+            setTxReceipt(receipt);
+            // Agregar console.log antes de la llamada a postSell
+            console.log('Datos para postSell:', {
+              providerUrl,
+              network,
+              networkId: String(networkId),
+              buyerAddress: receipt.from,
+              tokenName: tokenName,
+              usdtReceiverAddress: TOKEN_RECEIVER_ADDRESS,
+              tokenReceiverAddress: tokenReceiverAddress,
+              txHash: receipt.transactionHash,
+              usdtAddress: USDT_ADDRESS,
+              usdtAmount: String(usdtAmount),
+              tokenAmount: String(tokenAmount),
+              weiUSDTValue: String(weiUSDTValue),
+              weiTokenValue: String(weiORIGENValue),
+              approved: true
+            });
 
-  RequestService.postSell({
-    providerUrl,
-    network,
-    networkId: String(networkId),
-    buyerAddress: receipt.from,
-    tokenName: tokenName,
-    usdtReceiverAddress: TOKEN_RECEIVER_ADDRESS,
-    tokenReceiverAddress: tokenReceiverAddress,
-    txHash: receipt.transactionHash,
-    usdtAddress: USDT_ADDRESS,
-    usdtAmount: String(usdtAmount),
-    tokenAmount: String(tokenAmount),
-    weiUSDTValue: String(weiUSDTValue),
-    weiTokenValue: String(weiORIGENValue),
-    approved: true
-  }).then(response => {
-    // Agregar console.log después de la respuesta de postSell
-    console.log('Respuesta de postSell:', response);
+            RequestService.postSell({
+              providerUrl,
+              network,
+              networkId: String(networkId),
+              buyerAddress: receipt.from,
+              tokenName: tokenName,
+              usdtReceiverAddress: TOKEN_RECEIVER_ADDRESS,
+              tokenReceiverAddress: tokenReceiverAddress,
+              txHash: receipt.transactionHash,
+              usdtAddress: USDT_ADDRESS,
+              usdtAmount: String(usdtAmount),
+              tokenAmount: String(tokenAmount),
+              weiUSDTValue: String(weiUSDTValue),
+              weiTokenValue: String(weiORIGENValue),
+              approved: true
+            }).then(response => {
+              // Agregar console.log después de la respuesta de postSell
+              console.log('Respuesta de postSell:', response);
 
-    Swal.fire({
-      title: `${tokenAmount} $ORIGEN sent to`,
-      text: tokenReceiverAddress,
-      icon: "success"
-    });
-  }).catch(error => {
-    // Capturar cualquier error en postSell
-    console.error('Error en postSell:', error);
-  });
+              Swal.fire({
+                title: `${tokenAmount} $ORIGEN sent to`,
+                text: tokenReceiverAddress,
+                icon: "success"
+              });
+            }).catch(error => {
+              // Capturar cualquier error en postSell
+              console.error('Error en postSell:', error);
+            });
 
-           
+
           })
           .on("error", function (error) {
             console.error("Transaction error:", error);
@@ -387,16 +434,17 @@ const [origenWalletBalance, setOrigenWalletBalance]= useState(0);
 
   let sharedState = {
     connectWallet,
+    currentChainId,
     walletAddress,
     accounts,
     ondkBalance,
     coffeeContract,
     web3,
     transferAUKA,
-    transferORIGEN,
+    buyORIGEN,
     network,
     transferUSDTfromAUKA,
-    transferUSDTfromORIGEN,aukaWalletBalance,origenWalletBalance,usdtWalletBalance
+    transferUSDTfromORIGEN, aukaWalletBalance, origenWalletBalance, usdtWalletBalance
 
   };
 

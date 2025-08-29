@@ -5,24 +5,24 @@ import Select from "react-select";
 const TokenSelect = ({ selectedToken, onChange, prices }) => {
 
     const options = [
-        {
-            value: "ONDK",
-            label: "ONDK",
-            price: prices.ONDK?.toFixed(2),
-            image: "https://www.vetawallet.com/_next/image?url=%2Foknd.png&w=48&q=75",
-        },
-        {
-            value: "AGKA",
-            label: "AGKA",
-            price: prices.AGKA?.toFixed(2),
-            image: "https://www.vetawallet.com/_next/image?url=%2Fagk.png&w=48&q=75",
-        },
-        {
-            value: "AUKA",
-            label: "AUKA",
-            price: prices.AUKA?.toFixed(2),
-            image: "https://www.vetawallet.com/_next/image?url=%2Fauka.png&w=48&q=75",
-        },
+        // {
+        //     value: "ONDK",
+        //     label: "ONDK",
+        //     price: prices.ONDK?.toFixed(2),
+        //     image: "https://www.vetawallet.com/_next/image?url=%2Foknd.png&w=48&q=75",
+        // },
+        // {
+        //     value: "AGKA",
+        //     label: "AGKA",
+        //     price: prices.AGKA?.toFixed(2),
+        //     image: "https://www.vetawallet.com/_next/image?url=%2Fagk.png&w=48&q=75",
+        // },
+        // {
+        //     value: "AUKA",
+        //     label: "AUKA",
+        //     price: prices.AUKA?.toFixed(2),
+        //     image: "https://www.vetawallet.com/_next/image?url=%2Fauka.png&w=48&q=75",
+        // },
         {
             value: "ORIGEN",
             label: "ORIGEN",
@@ -57,7 +57,7 @@ const TokenSelect = ({ selectedToken, onChange, prices }) => {
             value={options.find((opt) => opt.value === selectedToken)}
             onChange={(option) => onChange({ target: { value: option.value } })}
             components={{ SingleValue: customSingleValue, Option: customOption }}
-            // isSearchable={false}
+            isSearchable={false}
             styles={{
                 control: (base) => ({
                     ...base,
@@ -77,11 +77,11 @@ const TokenSelect = ({ selectedToken, onChange, prices }) => {
                     ...base,
                     color: "white",
                 }),
-                input: (base) => ({
-                    ...base,
-                    color: "white", // Color del texto en el campo de búsqueda
-                    fontSize: "1.1rem", // Tamaño de la fuente en el campo de búsqueda
-                }),
+                // input: (base) => ({
+                //     ...base,
+                //     color: "white", // Color del texto en el campo de búsqueda
+                //     fontSize: "1.1rem", // Tamaño de la fuente en el campo de búsqueda
+                // }),
             }}
         />
     );

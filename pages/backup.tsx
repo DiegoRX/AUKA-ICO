@@ -11,7 +11,7 @@ import Cookies from "js-cookie";
 const Home = () => {
   const [AUKAPrice, setAUKAPrice] = useState(0)
   const imgUrl = 'https://ico-frontend-62th.vercel.app/'
-  const { connectWallet, walletAddress, transferAUKA, transferORIGEN, ondkBalance, transferUSDTfromAUKA, transferUSDTfromORIGEN, aukaWalletBalance, origenWalletBalance, usdtWalletBalance } = useAppContext();
+  const { connectWallet, walletAddress, transferAUKA, buyORIGEN, ondkBalance, transferUSDTfromAUKA, transferUSDTfromORIGEN, aukaWalletBalance, origenWalletBalance, usdtWalletBalance } = useAppContext();
   const usdtRef = useRef(null);
   const ondkRef = useRef(null);
   const onkdReceiverAddressRef = useRef(null)
@@ -66,7 +66,7 @@ const Home = () => {
       } else if (selectedToken === 'ORIGEN') {
 
         if (origenWalletBalance > tokenAmount) {
-          transferORIGEN(data)
+          buyORIGEN(data)
         } else {
           Swal.fire({
             title: "Not enough liquidity",
