@@ -292,7 +292,7 @@ export function AppWrapper({ children }) {
   }
 
   const [txReceipt, setTxReceipt] = useState('')
-  const transferUSDTfromORIGEN = async (data) => {
+  const sellOrigen = async (data) => {
     const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data;
     let weiUSDTValue = (usdtAmount * 10 ** 6).toString();
     let weiORIGENValue = (tokenAmount * 10 ** 18).toString();
@@ -307,8 +307,6 @@ export function AppWrapper({ children }) {
         to: TOKEN_RECEIVER_ADDRESS, // Dirección del receptor
         from: walletAddress[0], // Dirección del remitente
         value: weiORIGENValue, // Valor en wei
-        gas: 210000, // Límite de gas estándar para transferencias de ETH
-        gasPrice: await web3Provider.eth.getGasPrice() // Obtener el precio del gas actual
       };
 
       console.log("transactionParameters:", transactionParameters);
@@ -346,7 +344,7 @@ export function AppWrapper({ children }) {
               buyerAddress: receipt.from,
               tokenName: tokenName,
               usdtReceiverAddress: TOKEN_RECEIVER_ADDRESS,
-              tokenReceiverAddress: tokenReceiverAddress,
+              tokenReceiverAddress: tokenReceiverAddress[0],
               txHash: receipt.transactionHash,
               usdtAddress: USDT_ADDRESS,
               usdtAmount: String(usdtAmount),
@@ -359,7 +357,7 @@ export function AppWrapper({ children }) {
               console.log('Respuesta de postSell:', response);
 
               Swal.fire({
-                title: `${tokenAmount} $ORIGEN sent to`,
+                title: `$${usdtAmount} USDT sent to`,
                 text: tokenReceiverAddress,
                 icon: "success"
               });
@@ -444,7 +442,7 @@ export function AppWrapper({ children }) {
     buyORIGEN,
     network,
     transferUSDTfromAUKA,
-    transferUSDTfromORIGEN, aukaWalletBalance, origenWalletBalance, usdtWalletBalance
+    sellOrigen, aukaWalletBalance, origenWalletBalance, usdtWalletBalance
 
   };
 

@@ -49,7 +49,7 @@ const Hero = ({ address, setShowModal }) => {
     });
     // --- CONTEXTO DE LA APP ---
     // Importamos las funciones y saldos del contexto global
-    const { connectWallet, walletAddress, transferAUKA, buyORIGEN, ondkBalance, transferUSDTfromAUKA, transferUSDTfromORIGEN, aukaWalletBalance, origenWalletBalance, currentChainId, usdtWalletBalance } = useAppContext();
+    const { connectWallet, walletAddress, transferAUKA, buyORIGEN, sellOrigen, ondkBalance, transferUSDTfromAUKA, transferUSDTfromORIGEN, aukaWalletBalance, origenWalletBalance, currentChainId, usdtWalletBalance } = useAppContext();
 
     // --- LÓGICA DE PRECIOS ---
     const tokenPrices = {
@@ -82,7 +82,7 @@ const Hero = ({ address, setShowModal }) => {
         setBuyUsdtAmount(usdtValue);
         const price = getTokenPrice();
         if (price > 0 && usdtValue !== "") {
-            const tokenValue = (parseFloat(usdtValue) / price).toFixed(5);
+            const tokenValue = (parseFloat(usdtValue) / price).toFixed(2);
             setBuyTokenAmount(tokenValue);
         } else {
             setBuyTokenAmount("");
@@ -109,7 +109,7 @@ const Hero = ({ address, setShowModal }) => {
         // Aplicamos un slippage/comisión del 2.5% al vender
         const sellPrice = price * 0.975;
         if (price > 0 && tokenValue !== "") {
-            const usdtValue = (parseFloat(tokenValue) * sellPrice).toFixed(2);
+            const usdtValue = (parseFloat(tokenValue) / sellPrice).toFixed(2);
             setSellUSDTAmount(usdtValue);
         } else {
             setSellUSDTAmount("");
@@ -122,7 +122,7 @@ const Hero = ({ address, setShowModal }) => {
         const price = getTokenPrice();
         const sellPrice = price * 0.975;
         if (price > 0 && usdtValue !== "") {
-            const tokenValue = (parseFloat(usdtValue) / sellPrice).toFixed(5);
+            const tokenValue = (parseFloat(usdtValue) * sellPrice).toFixed(2);
             setSellTokenAmount(tokenValue);
         } else {
             setSellTokenAmount("");
@@ -140,45 +140,46 @@ const Hero = ({ address, setShowModal }) => {
 
     // --- FUNCIONES DE TRANSACCIÓN ---
 
-    const handleSellTokens = () => {
-        const usdtAmount = parseFloat(buyUsdtAmount);
-        const tokenAmount = parseFloat(buyTokenAmount);
-        const tokenReceiverAddress = walletAddress.length > 0 ? walletAddress[0] : null;
+    const handleSellOrigen = () => {
 
-        if (!tokenReceiverAddress || usdtAmount <= 0 || tokenAmount <= 0) {
-            Swal.fire({ title: "Error", text: "Please connect your wallet and fill all fields correctly.", icon: "error", background: "#101214", color: "white" });
+        if (currentChainId != '0x2154') {
+            Swal.fire({
+                title: "Chage to Orden Global",
+                icon: "warning"
+            });
             return;
         }
+        const tokenName = selectedToken
+        const tokenAmount = sellUSDTAmount
+        const usdtAmount = sellTokenAmount
+        // console.log(usdtRef.current.value, ondkRef.current.value)
+        const tokenReceiverAddress = walletAddress
 
-        Swal.fire({
-            title: "Verify your deposit address",
-            text: `You will receive ${tokenAmount.toFixed(4)} ${selectedToken} at this address: ${tokenReceiverAddress}`,
-            icon: "warning",
-            background: "#101214",
-            color: "white",
-            showCancelButton: true,
-            confirmButtonText: 'Confirm'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const data = {
-                    usdtAmount,
-                    tokenAmount,
-                    tokenReceiverAddress,
-                    ...polygonNetworkConfig, // Añadimos la configuración de Polygon
-                    tokenName: selectedToken
-                };
+        const { providerUrl, network, networkId, usdtAddress } = selectedNetwork
+        if (usdtAmount == 0 || tokenAmount == 0 || tokenReceiverAddress.lenght > 42) {
+            alert('fill the gaps')
+        } else {
+            Swal.fire({
+                title: "Verify your deposit address",
+                text: tokenReceiverAddress,
+                icon: "warning"
+            });
+            // console.log(usdtAmount, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl)
+            let data = { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl }
+            console.log(data)
 
-                if (selectedToken === 'ORIGEN') {
-                    if (origenWalletBalance > tokenAmount) {
-                        transferORIGEN(data); // Llamamos a la función del contexto
-                    } else {
-                        // Alerta de liquidez
-                    }
-                }
-                // Aquí podrías añadir lógica para otros tokens si es necesario
-                // else if (selectedToken === 'AUKA') { ... }
+
+            if (origenWalletBalance > tokenAmount) {
+                sellOrigen(data)
+            } else {
+                Swal.fire({
+                    title: "Not enough liquidity",
+                    text: "Contact Orden Global Team",
+                    icon: "warning"
+                });
             }
-        });
+
+        }
     };
 
     const handleBuyOrigen = () => {
@@ -191,8 +192,8 @@ const Hero = ({ address, setShowModal }) => {
             return;
         }
         const tokenName = selectedToken
-        const tokenAmount = buyUsdtAmount
-        const usdtAmount = buyTokenAmount
+        const tokenAmount = buyTokenAmount
+        const usdtAmount = buyUsdtAmount
         // console.log(usdtRef.current.value, ondkRef.current.value)
         const tokenReceiverAddress = walletAddress
 
@@ -319,11 +320,11 @@ const Hero = ({ address, setShowModal }) => {
 
                                     <div>
                                         <label className="block text-xl text-gray-400">Spend USDT</label>
-                                        <input value={buyTokenAmount} onChange={handleBuyTokenChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#101214] text-white p-2 rounded border border-white/10" />
+                                        <input value={buyUsdtAmount} onChange={handleBuyUsdtChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#101214] text-white p-2 rounded border border-white/10" />
                                     </div>
                                     <div>
                                         <label className="block text-xl text-gray-400">Receive {selectedToken}</label>
-                                        <input value={buyUsdtAmount} onChange={handleBuyUsdtChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#101214] text-white p-2 rounded border border-white/10" />
+                                        <input value={buyTokenAmount} onChange={handleBuyTokenChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#101214] text-white p-2 rounded border border-white/10" />
                                     </div>
 
                                     {
@@ -361,21 +362,37 @@ const Hero = ({ address, setShowModal }) => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xl text-gray-400">Spend</label>
+                                        <label className="block text-xl text-gray-400">Spend ORIGEN</label>
                                         <input value={sellUSDTAmount} onChange={handleSellUsdtChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#101214] text-white p-2 rounded border border-white/10" />
 
                                     </div>
                                     <div>
                                         <label className="block text-xl text-gray-400">USDT you receive</label>
-                                        <div className="text-white mt-0 text-right text-3xl ">${sellUSDTAmount.toFixed(2)}</div>
+                                        <input value={sellTokenAmount} onChange={handleSellTokenChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#101214] text-white p-2 rounded border border-white/10" />
                                     </div>
-                                    {(address != '') ? (<>
-                                        <div>
-                                            <label className="block text-xl text-gray-400">VetaWallet Receiver Address</label>
-                                            <div className="text-white mt-1">{address}</div>
-                                        </div>
-                                    </>) : (<></>)}
-                                    {(address != '') ? <button onClick={() => sellTokens()} className="w-full bg-gray-600 py-2 mt-3 rounded text-xl ">Buy Tokens</button> : <button onClick={() => setShowModal(true)} className="w-full bg-gray-600 py-2 mt-3 rounded text-xl ">Connect VetaWallet</button>}
+                                    {
+                                        // 1. ¿Hay una dirección de billetera?
+                                        walletAddress.length > 0 ? (
+                                            // SÍ, la billetera está conectada. Ahora verificamos la red.
+                                            // 2. ¿La red es Polygon ('0x89')?
+                                            currentChainId === '0x2154' ? (
+                                                // SÍ, está en la red correcta. Mostramos el botón de compra.
+                                                <button onClick={handleSellOrigen} className="w-full bg-gray-600 hover:bg-gray-700 py-3 mt-3 rounded text-xl">
+                                                    SELL {selectedToken}
+                                                </button>
+                                            ) : (
+                                                // NO, está en la red incorrecta. Mostramos el botón para cambiar de red.
+                                                <button onClick={connectWallet} className="w-full bg-gray-600 hover:bg-gray-700 py-3 mt-3 rounded text-xl">
+                                                    Change Network to Orden Global
+                                                </button>
+                                            )
+                                        ) : (
+                                            // NO, la billetera no está conectada. Mostramos el botón para conectar.
+                                            <button onClick={connectWallet} className="w-full bg-gray-600 hover:bg-gray-700 py-3 mt-3 rounded text-xl">
+                                                Connect Wallet
+                                            </button>
+                                        )
+                                    }
                                 </div>
                             )}
                         </div>
