@@ -62,12 +62,12 @@ const Hero = ({ address, setShowModal }) => {
     const getTokenPrice = (token = selectedToken) => tokenPrices[token] || 0;
 
     const fetchPrices = async () => {
-        const auka = parseFloat(Cookies.get("auka") || 0);
-        const agka = parseFloat(Cookies.get("agka") || 0);
-        setAUKAPrice(auka);
-        setAGKAPrice(agka);
-        const origen = auka * 0.032151 / 55;
-        setORIGENPrice(origen);
+        // const auka = parseFloat(Cookies.get("auka") || 0);
+        // const agka = parseFloat(Cookies.get("agka") || 0);
+        // setAUKAPrice(auka);
+        // setAGKAPrice(agka);
+        // const origen = auka * 0.032151 / 55;
+        // setORIGENPrice(origen);
     };
 
     useEffect(() => {
