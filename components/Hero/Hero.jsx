@@ -28,7 +28,7 @@ const Hero = ({ address, setShowModal }) => {
     const [AUKAPrice, setAUKAPrice] = useState(0);
     const [AGKAPrice, setAGKAPrice] = useState(0);
     const [ONDKPrice] = useState(1.8);
-    const [ORIGENPrice, setORIGENPrice] = useState(0);
+    const [ORIGENPrice, setORIGENPrice] = useState(1.97);
 
     // --- ESTADOS PARA LOS FORMULARIOS ---
     // Estados para el formulario de COMPRA (BUY)
