@@ -441,9 +441,9 @@ const Hero = ({ address, setShowModal }) => {
                         By ORDEN EXCHANGE
                     </span>
                 </h1>
-                <p className="mt-4 text-gray-400 text-xl sm:text-2xl md:text-3xl lg:text-[42px]">
+                {/* <p className="mt-4 text-gray-400 text-xl sm:text-2xl md:text-3xl lg:text-[42px]">
                     Use your credit card or Binance wallet to buy.
-                </p>
+                </p> */}
             </div>
 
                 {/* Buy/Sell Card */}
@@ -486,8 +486,8 @@ const Hero = ({ address, setShowModal }) => {
                                         <label className="block text-xl text-gray-400">Payment Method</label>
                                         <select className="w-full mt-1 bg-[#05071c] text-white p-2 rounded border border-white/10">
                                             <option>USDT Polygon - Metamask</option>
-                                            <option>Binance Pay</option>
-                                            <option>Credit / Debit card</option>
+                                            {/* <option>Binance Pay</option>
+                                            <option>Credit / Debit card</option> */}
                                         </select>
                                     </div>
 
