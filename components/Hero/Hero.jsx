@@ -107,7 +107,8 @@ const Hero = ({ address, setShowModal }) => {
         setSellTokenAmount(tokenValue);
         const price = getTokenPrice();
         // Aplicamos un slippage/comisión del 2.5% al vender
-        const sellPrice = price * 0.975;
+        const sellPrice = price
+        // * 0.975;
         if (price > 0 && tokenValue !== "") {
             const usdtValue = (parseFloat(tokenValue) / sellPrice).toFixed(2);
             setSellUSDTAmount(usdtValue);
@@ -120,7 +121,8 @@ const Hero = ({ address, setShowModal }) => {
         const usdtValue = e.target.value;
         setSellUSDTAmount(usdtValue);
         const price = getTokenPrice();
-        const sellPrice = price * 0.975;
+        const sellPrice = price
+        // * 0.975;
         if (price > 0 && usdtValue !== "") {
             const tokenValue = (parseFloat(usdtValue) * sellPrice).toFixed(2);
             setSellTokenAmount(tokenValue);
