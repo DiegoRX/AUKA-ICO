@@ -245,12 +245,53 @@ const Hero = ({ address, setShowModal }) => {
     }, []);
 
     const particlesLoaded = (container) => { };
-    const options = useMemo(() => ({ /*...opciones de partículas...*/ }), []);
-
+    const options = useMemo(
+        () => ({
+            background: { color: { value: "transparent" } },
+            fpsLimit: 120,
+            interactivity: {
+                events: {
+                    onClick: { enable: true, mode: "push" },
+                    onHover: { enable: true, mode: "repulse" },
+                },
+                modes: {
+                    push: { quantity: 4 },
+                    repulse: { distance: 200, duration: 0.4 },
+                },
+            },
+            particles: {
+                color: { value: "#ffffff" },
+                links: {
+                    enable: false,
+                    color: "#ffffff",
+                    distance: 150,
+                    opacity: 0.5,
+                    width: 1,
+                },
+                move: {
+                    direction: "none",
+                    enable: true,
+                    outModes: { default: "bounce" },
+                    random: false,
+                    speed: 3,
+                    straight: false,
+                },
+                number: {
+                    density: { enable: true },
+                    value: 80,
+                },
+                opacity: { value: 0.5 },
+                shape: { type: "circle" },
+                size: { value: { min: 1, max: 5 } },
+            },
+            detectRetina: true,
+        }),
+        [],
+    );
     if (!init) return null; // Previene renderizado antes de inicializar partículas
 
     return (
-        <main className="h-screen overflow-y-auto bg-gradient-to-b from-black via-gray-900 to-gray-950 flex flex-col">
+        <main className="h-screen overflow-y-auto bg-gradient-to-b from-[#05071c] via-[#0a1a3a] to-[#020617] flex flex-col">
             <Particles
                 id="tsparticles"
                 className="!absolute !inset-0 !h-full !w-full"
@@ -259,18 +300,17 @@ const Hero = ({ address, setShowModal }) => {
             />
 
             {/* Contenido principal: Texto + Card */}
-            <div className="relative z-10 flex-1 flex flex-col lg:flex-row items-center justify-between max-w-6xl mx-auto w-full px-4 py-10 h-[100vh]">                    {/* Hero Text */}
-                <div className="max-w-xl text-center lg:text-left ">
-                    <h1 className="text-5xl sm:text-6xl md:text-6xl lg:text-[60px] font-bold leading-tight lg:leading-[1.2]">
-                        Buy Crypto Tokens<br />
-                        <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-transparent bg-clip-text">
-                            By ORDEN EXCHANGE
-                        </span>
-                    </h1>
-                    <p className="mt-4 text-gray-400 text-xl sm:text-2xl md:text-3xl lg:text-[42px]">
-                        Use your credit card or Binance wallet to buy.
-                    </p>
-                </div>
+            <div className="relative z-10 flex-1 flex flex-col lg:flex-row items-center justify-between max-w-6xl mx-auto w-full px-4 py-10">                <div className="max-w-xl text-center lg:text-left ">
+                <h1 className="text-5xl sm:text-6xl md:text-6xl lg:text-[60px] font-bold leading-tight lg:leading-[1.2]">
+                    Buy Crypto Tokens<br />
+                    <span className="bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 text-transparent bg-clip-text">
+                        By ORDEN EXCHANGE
+                    </span>
+                </h1>
+                <p className="mt-4 text-gray-400 text-xl sm:text-2xl md:text-3xl lg:text-[42px]">
+                    Use your credit card or Binance wallet to buy.
+                </p>
+            </div>
 
                 {/* Buy/Sell Card */}
                 <div className="w-[400px] rounded-xl shadow-lg overflow-hidden">
@@ -280,8 +320,8 @@ const Hero = ({ address, setShowModal }) => {
                             <button
                                 onClick={() => setMode('buy')}
                                 className={`flex-1 py-3 text-xl font-semibold ${mode === 'buy'
-                                    ? 'bg-[#16191C] text-white'
-                                    : 'bg-[#101214] text-gray-400 hover:bg-[#16191C]'
+                                    ? 'bg-[#05071c] text-white'
+                                    : 'bg-[#0A1A3A] text-gray-400 hover:bg-[#05071c]'
                                     }`}
                             >
                                 BUY
@@ -289,15 +329,15 @@ const Hero = ({ address, setShowModal }) => {
                             <button
                                 onClick={() => setMode('sell')}
                                 className={`flex-1 py-3 text-xl font-semibold ${mode === 'sell'
-                                    ? 'bg-[#16191C] text-white'
-                                    : 'bg-[#101214] text-gray-400 hover:bg-[#16191C]'
+                                    ? 'bg-[#05071c] text-white'
+                                    : 'bg-[#0A1A3A] text-gray-400 hover:bg-[#05071c]'
                                     }`}
                             >
                                 SELL
                             </button>
                         </div>
 
-                        <div className="bg-[#16191C] p-6 space-y-4">
+                        <div className="bg-[#05071c] p-6 space-y-4">
                             {mode === 'buy' ? (
                                 <div>
                                     <div>
@@ -310,7 +350,7 @@ const Hero = ({ address, setShowModal }) => {
                                     </div>
                                     <div>
                                         <label className="block text-xl text-gray-400">Payment Method</label>
-                                        <select className="w-full mt-1 bg-[#16191C] text-white p-2 rounded border border-white/10">
+                                        <select className="w-full mt-1 bg-[#05071c] text-white p-2 rounded border border-white/10">
                                             <option>USDT Polygon - Metamask</option>
                                             <option>Binance Pay</option>
                                             <option>Credit / Debit card</option>
@@ -320,11 +360,11 @@ const Hero = ({ address, setShowModal }) => {
 
                                     <div>
                                         <label className="block text-xl text-gray-400">Spend USDT</label>
-                                        <input value={buyUsdtAmount} onChange={handleBuyUsdtChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#101214] text-white p-2 rounded border border-white/10" />
+                                        <input value={buyUsdtAmount} onChange={handleBuyUsdtChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#0A1A3A] text-white p-2 rounded border border-white/10" />
                                     </div>
                                     <div>
                                         <label className="block text-xl text-gray-400">Receive {selectedToken}</label>
-                                        <input value={buyTokenAmount} onChange={handleBuyTokenChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#101214] text-white p-2 rounded border border-white/10" />
+                                        <input value={buyTokenAmount} onChange={handleBuyTokenChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#0A1A3A] text-white p-2 rounded border border-white/10" />
                                     </div>
 
                                     {
@@ -334,18 +374,18 @@ const Hero = ({ address, setShowModal }) => {
                                             // 2. ¿La red es Polygon ('0x89')?
                                             currentChainId === '0x89' ? (
                                                 // SÍ, está en la red correcta. Mostramos el botón de compra.
-                                                <button onClick={handleBuyOrigen} className="w-full bg-gray-600 hover:bg-gray-700 py-3 mt-3 rounded text-xl">
+                                                <button onClick={handleBuyOrigen} className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 font-bold py-3 mt-3 rounded text-xl">
                                                     BUY {selectedToken}
                                                 </button>
                                             ) : (
                                                 // NO, está en la red incorrecta. Mostramos el botón para cambiar de red.
-                                                <button onClick={connectWallet} className="w-full bg-gray-600 hover:bg-gray-700 py-3 mt-3 rounded text-xl">
+                                                <button onClick={connectWallet} className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 font-bold py-3 mt-3 rounded text-xl">
                                                     Change Network to Polygon
                                                 </button>
                                             )
                                         ) : (
                                             // NO, la billetera no está conectada. Mostramos el botón para conectar.
-                                            <button onClick={connectWallet} className="w-full bg-gray-600 hover:bg-gray-700 py-3 mt-3 rounded text-xl">
+                                            <button onClick={connectWallet} className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 font-bold py-3 mt-3 rounded text-xl">
                                                 Connect Wallet
                                             </button>
                                         )
@@ -363,12 +403,12 @@ const Hero = ({ address, setShowModal }) => {
                                     </div>
                                     <div>
                                         <label className="block text-xl text-gray-400">Spend ORIGEN</label>
-                                        <input value={sellUSDTAmount} onChange={handleSellUsdtChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#101214] text-white p-2 rounded border border-white/10" />
+                                        <input value={sellUSDTAmount} onChange={handleSellUsdtChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#0A1A3A] text-white p-2 rounded border border-white/10" />
 
                                     </div>
                                     <div>
                                         <label className="block text-xl text-gray-400">USDT you receive</label>
-                                        <input value={sellTokenAmount} onChange={handleSellTokenChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#101214] text-white p-2 rounded border border-white/10" />
+                                        <input value={sellTokenAmount} onChange={handleSellTokenChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#0A1A3A] text-white p-2 rounded border border-white/10" />
                                     </div>
                                     {
                                         // 1. ¿Hay una dirección de billetera?
@@ -377,18 +417,18 @@ const Hero = ({ address, setShowModal }) => {
                                             // 2. ¿La red es Polygon ('0x89')?
                                             currentChainId === '0x2154' ? (
                                                 // SÍ, está en la red correcta. Mostramos el botón de compra.
-                                                <button onClick={handleSellOrigen} className="w-full bg-gray-600 hover:bg-gray-700 py-3 mt-3 rounded text-xl">
+                                                <button onClick={handleSellOrigen} className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 font-bold py-3 mt-3 rounded text-xl">
                                                     SELL {selectedToken}
                                                 </button>
                                             ) : (
                                                 // NO, está en la red incorrecta. Mostramos el botón para cambiar de red.
-                                                <button onClick={connectWallet} className="w-full bg-gray-600 hover:bg-gray-700 py-3 mt-3 rounded text-xl">
+                                                <button onClick={connectWallet} className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 font-bold py-3 mt-3 rounded text-xl">
                                                     Change Network to Orden Global
                                                 </button>
                                             )
                                         ) : (
                                             // NO, la billetera no está conectada. Mostramos el botón para conectar.
-                                            <button onClick={connectWallet} className="w-full bg-gray-600 hover:bg-gray-700 py-3 mt-3 rounded text-xl">
+                                            <button onClick={connectWallet} className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 font-bold py-3 mt-3 rounded text-xl">
                                                 Connect Wallet
                                             </button>
                                         )
@@ -400,10 +440,10 @@ const Hero = ({ address, setShowModal }) => {
                 </div>
             </div>
 
-            {/* TokenTable debajo del contenido principal */}
+            {/* TokenTable debajo del contenido principal
             <div className="relative z-10 w-full max-w-6xl mx-auto px-4 pb-20">
                 <TokenTable prices={tokenPrices} />
-            </div>
+            </div> */}
         </main>
     );
 };

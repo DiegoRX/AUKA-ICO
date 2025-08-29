@@ -61,7 +61,7 @@ const TokenSelect = ({ selectedToken, onChange, prices }) => {
             styles={{
                 control: (base) => ({
                     ...base,
-                    backgroundColor: "#16191C",
+                    backgroundColor: "#0A1A3A",
                     borderColor: "rgba(255,255,255,0.7)",
                     color: "white",
                     padding: "0",
@@ -70,7 +70,7 @@ const TokenSelect = ({ selectedToken, onChange, prices }) => {
                 }),
                 menu: (base) => ({
                     ...base,
-                    backgroundColor: "#16191C",
+                    backgroundColor: "#0A1A3A",
                     color: "white",
                 }),
                 singleValue: (base) => ({

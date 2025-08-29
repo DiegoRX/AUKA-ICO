@@ -250,7 +250,7 @@ const Home = () => {
   return (
     <div>
       <div className="header">
-        <img src={'https://i.ibb.co/ZJKFjCd/ordenex-logo.png'} alt="logo" />
+        <img src={'/logo-white.png'} alt="logo" />
         <div className="info">
           <a href="">Whitepaper</a>
           <a href="">About</a>
@@ -286,7 +286,7 @@ const Home = () => {
                 SELL
               </div>
             </div>
-            <img src={'https://i.ibb.co/ZJKFjCd/ordenex-logo.png'} alt="x" />
+            <img src={'/logo-white.png'} alt="x" />
             <h1>BUY TOKENS</h1>
 
 
@@ -429,7 +429,7 @@ const Home = () => {
                 SELL
               </div>
             </div>
-            <img src={'https://i.ibb.co/ZJKFjCd/ordenex-logo.png'} alt="x" />
+            <img src={'/logo-white.png'} alt="x" />
             <h1>SELL TOKENS</h1>
             <div className="divider flex justify-around w-100 align-center">
               <hr />

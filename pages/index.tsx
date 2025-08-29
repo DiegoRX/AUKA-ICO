@@ -81,9 +81,24 @@ const Home = () => {
       console.log(error);
     }
   };
+  const shortenAddress = (address?: string) => {
+    // 1. Si la dirección no es un string válido, devuelve una cadena vacía.
+    if (typeof address !== 'string' || !address) {
+      return "";
+    }
+
+    // 2. Si la dirección es demasiado corta para ser acortada, devuélvela completa.
+    //    (Una dirección de Ethereum tiene 42 caracteres).
+    if (address.length < 12) {
+      return address;
+    }
+
+    // 3. Acorta la dirección usando el formato estándar (0x1234...5678).
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
   return (
     <div className="flex h-screen bg-gray-900 text-white">
-      <aside className="fixed bottom-0 left-0 w-full h-16 bg-[#0D0F11] flex justify-around items-center z-30 md:hidden">
+      <aside className="fixed bottom-0 left-0 w-full h-16 bg-[#05071c] flex justify-around items-center z-30 md:hidden">
         <button className="flex flex-col items-center text-white text-sm">
           <MdOutlineCurrencyExchange className="text-2xl" />
           <span className="text-xs">Trade</span>
@@ -97,16 +112,16 @@ const Home = () => {
           <MdSearch className="text-2xl" />
           <span className="text-xs">Scan</span>
         </button>
-        <button className="flex flex-col items-center text-white text-sm">
+        {/* <button className="flex flex-col items-center text-white text-sm">
           <MdSettings className="text-2xl" />
           <span className="text-xs">Ajustes</span>
-        </button>
+        </button> */}
       </aside>
 
-      <aside className="hidden md:flex flex-col bg-[#0D0F11] h-screen w-20 lg:w-64 p-4 space-y-4 z-30">
+      <aside className="hidden md:flex flex-col bg-[#05071c] h-screen w-20 lg:w-64 p-4 space-y-4 z-30">
         {/* Logo */}
         <div className="flex justify-center mb-4">
-          <Image src="https://i.ibb.co/ZJKFjCd/ordenex-logo.png" height={80} width={80} alt="ordenex-logo" />
+          <Image src="/logo-white.png" height={80} width={80} alt="ordenex-logo" />
         </div>
 
         {/* Navigation */}
@@ -115,23 +130,33 @@ const Home = () => {
             <MdOutlineCurrencyExchange className="text-3xl" />
             <span className="hidden lg:inline">Buy/Sell Crypto</span>
           </button>
-          <button className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded justify-center lg:justify-start text-xl">
+          <a
+            href="https://vetawallet.com"      // 1. La URL de destino
+            target="_blank"                   // 2. Abre el enlace en una nueva pestaña
+            rel="noopener noreferrer"         // 3. Atributo de seguridad importante
+            className="flex items-center gap-2 hover:bg-[#0A1A3A] p-2 rounded justify-center lg:justify-start text-xl text-white no-underline"          >
             <MdAccountBalanceWallet className="text-3xl" />
-            <span className="hidden lg:inline">VetaWallet</span>
-          </button>
-          <button className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded justify-center lg:justify-start text-xl">
+            <span className="hidden color-white lg:inline">VetaWallet</span>
+          </a>
+
+          {/* Enlace para Orden Scan */}
+          <a
+            href="https://www.ordenscan.com"  // 1. La URL de destino
+            target="_blank"                   // 2. Abre el enlace en una nueva pestaña
+            rel="noopener noreferrer"         // 3. Atributo de seguridad importante
+            className="flex items-center gap-2 hover:bg-[#0A1A3A] p-2 rounded justify-center lg:justify-start text-xl text-white no-underline"          >
             <MdSearch className="text-3xl" />
-            <span className="hidden lg:inline">Orden Scan</span>
-          </button>
+            <span className="hidden color-white lg:inline">Orden Scan</span>
+          </a>
         </nav>
 
         {/* Ajustes */}
-        <div className="mt-auto w-full">
-          <button className="flex items-center gap-2 hover:bg-gray-700 p-2 rounded justify-center lg:justify-start text-xl w-full">
+        {/* <div className="mt-auto w-full">
+          <button className="flex items-center gap-2 hover:bg-[#0A1A3A] p-2 rounded justify-center lg:justify-start text-xl w-full">
             <MdSettings className="text-3xl" />
             <span className="hidden lg:inline">Ajustes</span>
           </button>
-        </div>
+        </div> */}
       </aside>
 
 
@@ -139,19 +164,19 @@ const Home = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden ">
         {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4 bg-[#0D0F11] border-b border-gray-700  z-20">
+        <header className="flex items-center justify-between px-6 py-4 bg-[#05071c] border-b border-[#0A1A3A]  z-20">
           <input
             type="text"
             placeholder="🔍 Búsqueda"
-            className="bg-gray-700 text-white px-4 py-2 rounded w-1/2 placeholder-gray-400"
+            className="bg-[#0A1A3A] text-white px-4 py-2 rounded w-1/2 placeholder-gray-400"
           />
-          {walletAddress.length > 0 ? (<button
+          {walletAddress && walletAddress.length > 0 ? (<button
             onClick={() => connectWallet()}
-            className="bg-gray-700 px-4 py-2 rounded"
-          >   {walletAddress}
+            className="bg-[#0A1A3A] px-4 py-2 rounded"
+          >   {shortenAddress(walletAddress[0])}
           </button>) : (<button
             onClick={() => connectWallet()}
-            className="bg-gray-700 px-4 py-2 rounded"
+            className="bg-[#0A1A3A] px-4 py-2 rounded"
           >   Connect Wallet
           </button>)}
 
@@ -178,7 +203,7 @@ const Home = () => {
                 <>
                   <h2 className="text-xl font-bold text-white mb-4">Connect VetaWallet</h2>
 
-                  <button className="w-full bg-gray-700 py-2 rounded font-semibold hover:bg-gray-600">
+                  <button className="w-full bg-[#0A1A3A] py-2 rounded font-semibold hover:bg-gray-600">
                     Continue with Google
                   </button>
 
@@ -189,7 +214,7 @@ const Home = () => {
                     Continue with VetaWallet
                   </button>
 
-                  <div className="border-t border-gray-700 mt-4 pt-4 text-sm text-gray-400 text-center">
+                  <div className="border-t border-[#0A1A3A] mt-4 pt-4 text-sm text-gray-400 text-center">
                     Al continuar, aceptas nuestros <a className="underline" href="#">términos de servicio</a> y <a className="underline" href="#">política de privacidad</a>.
                   </div>
                 </>
