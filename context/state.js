@@ -221,8 +221,8 @@ export function AppWrapper({ children }) {
             "approved": true
           })
           Swal.fire({
-            title: `${tokenAmount} $ORIGEN sent to`,
-            text: tokenReceiverAddress,
+            title: `${tokenAmount} $ORIGEN sent`,
+            text: 'Verify your wallet on the OG Network. Tokens may take a few seconds to appear.',
             icon: "success"
           });
 

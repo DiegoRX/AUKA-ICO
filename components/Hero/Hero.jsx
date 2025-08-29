@@ -326,12 +326,29 @@ const Hero = ({ address, setShowModal }) => {
                                         <input value={buyUsdtAmount} onChange={handleBuyUsdtChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#101214] text-white p-2 rounded border border-white/10" />
                                     </div>
 
-                                    {walletAddress.length > 0 ? (
-                                        <button onClick={handleBuyOrigen} className="w-full bg-gray-600 py-2 mt-3 rounded">  BUY {selectedToken}</button>) : (
-                                        <button onClick={connectWallet} className="w-full bg-gray-600 hover:bg-gray-700 py-3 mt-3 rounded text-xl">
-                                            Connect Wallet
-                                        </button>
-                                    )}
+                                    {
+                                        // 1. ¿Hay una dirección de billetera?
+                                        walletAddress.length > 0 ? (
+                                            // SÍ, la billetera está conectada. Ahora verificamos la red.
+                                            // 2. ¿La red es Polygon ('0x89')?
+                                            currentChainId === '0x89' ? (
+                                                // SÍ, está en la red correcta. Mostramos el botón de compra.
+                                                <button onClick={handleBuyOrigen} className="w-full bg-gray-600 hover:bg-gray-700 py-3 mt-3 rounded text-xl">
+                                                    BUY {selectedToken}
+                                                </button>
+                                            ) : (
+                                                // NO, está en la red incorrecta. Mostramos el botón para cambiar de red.
+                                                <button onClick={connectWallet} className="w-full bg-gray-600 hover:bg-gray-700 py-3 mt-3 rounded text-xl">
+                                                    Change Network to Polygon
+                                                </button>
+                                            )
+                                        ) : (
+                                            // NO, la billetera no está conectada. Mostramos el botón para conectar.
+                                            <button onClick={connectWallet} className="w-full bg-gray-600 hover:bg-gray-700 py-3 mt-3 rounded text-xl">
+                                                Connect Wallet
+                                            </button>
+                                        )
+                                    }
                                 </div>
                             ) : (
                                 <div>
