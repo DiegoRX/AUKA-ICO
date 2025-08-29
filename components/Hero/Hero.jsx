@@ -101,7 +101,8 @@ const Hero = ({ address, setShowModal }) => {
     });
     // --- CONTEXTO DE LA APP ---
     // Importamos las funciones y saldos del contexto global
-    const { connectWallet, walletAddress, transferAUKA, buyORIGEN, sellOrigen, ondkBalance, transferUSDTfromAUKA, transferUSDTfromORIGEN, aukaWalletBalance, origenWalletBalance, currentChainId, setCurrentChainId, usdtWalletBalance } = useAppContext();
+    const { connectWallet, walletAddress, transferAUKA, buyORIGEN, sellOrigen, ondkBalance, transferUSDTfromAUKA, transferUSDTfromORIGEN, aukaWalletBalance, origenWalletBalance, currentChainId, setCurrentChainId, usdtWalletBalance, OGbalanceORIGEN,
+        OGUSDTBalance, } = useAppContext();
 
     // --- LÓGICA DE PRECIOS ---
     const tokenPrices = {
@@ -129,9 +130,32 @@ const Hero = ({ address, setShowModal }) => {
     // --- MANEJADORES DE CAMBIOS EN LOS INPUTS ---
 
     // Lógica para el formulario de COMPRA
+    const handleSetMaxUsdt = () => {
+        // Si no hay balance o es cero, no hacemos nada.
+        if (!usdtWalletBalance || parseFloat(usdtWalletBalance) <= 0) {
+            return;
+        }
+
+        // Creamos un evento sintético para pasarlo al manejador onChange existente.
+        // Esto asegura que el campo "Receive Token" también se calcule y actualice.
+        const syntheticEvent = {
+            target: { value: usdtWalletBalance.toString() }
+        };
+        handleBuyUsdtChange(syntheticEvent);
+    };
+
+    // 2. Modificamos la función onChange de USDT para añadir la validación
     const handleBuyUsdtChange = (e) => {
-        const usdtValue = e.target.value;
+        let usdtValue = e.target.value;
+        const maxAllowed = parseFloat(usdtWalletBalance);
+
+        // Si el valor introducido es mayor que el balance, lo ajustamos al máximo.
+        if (usdtWalletBalance && usdtValue !== "" && parseFloat(usdtValue) > maxAllowed) {
+            usdtValue = maxAllowed.toString();
+        }
+
         setBuyUsdtAmount(usdtValue);
+
         const price = getTokenPrice();
         if (price > 0 && usdtValue !== "") {
             const tokenValue = (parseFloat(usdtValue) / price).toFixed(2);
@@ -169,15 +193,44 @@ const Hero = ({ address, setShowModal }) => {
         }
     };
 
+    const handleSetMaxOrigen = () => {
+        if (!origenWalletBalance || parseFloat(origenWalletBalance) <= 0.04) {
+            // Si no hay balance o no alcanza para el gas, no hacemos nada o ponemos 0
+            setSellUSDTAmount("0");
+            setSellTokenAmount("0"); // También reseteamos el otro campo
+            return;
+        }
+
+        // Calculamos el máximo restando el gas
+        const maxAmount = parseFloat(origenWalletBalance) - 0.04;
+
+        // Usamos el mismo evento que el onChange para mantener la consistencia
+        const syntheticEvent = {
+            target: { value: maxAmount.toString() }
+        };
+        handleSellUsdtChange(syntheticEvent);
+    };
+
+
+    // 2. Modificamos la función onChange para añadir la validación
     const handleSellUsdtChange = (e) => {
-        const usdtValue = e.target.value;
-        setSellUSDTAmount(usdtValue);
+        let newAmount = e.target.value;
+        const maxAllowed = parseFloat(origenWalletBalance) - 0.04;
+
+        // Si el valor introducido es mayor que el máximo permitido, lo ajustamos al máximo.
+        // Nos aseguramos de que haya un balance para comparar.
+        if (origenWalletBalance && newAmount !== "" && parseFloat(newAmount) > maxAllowed) {
+            newAmount = maxAllowed.toString();
+        }
+
+        setSellUSDTAmount(newAmount); // El estado de este input
+
         const price = getTokenPrice();
-        const sellPrice = price
-        // * 0.975;
-        if (price > 0 && usdtValue !== "") {
-            const tokenValue = (parseFloat(usdtValue) * sellPrice).toFixed(2);
-            setSellTokenAmount(tokenValue);
+        const sellPrice = price; // La lógica de precio que tenías
+
+        if (price > 0 && newAmount !== "") {
+            const tokenValue = (parseFloat(newAmount) / sellPrice).toFixed(2);
+            setSellTokenAmount(tokenValue); // El estado del input "USDT you receive"
         } else {
             setSellTokenAmount("");
         }
@@ -213,17 +266,13 @@ const Hero = ({ address, setShowModal }) => {
         if (usdtAmount == 0 || tokenAmount == 0 || tokenReceiverAddress.lenght > 42) {
             alert('fill the gaps')
         } else {
-            Swal.fire({
-                title: "Verify your deposit address",
-                text: tokenReceiverAddress,
-                icon: "warning"
-            });
+
             // console.log(usdtAmount, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl)
             let data = { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl }
             console.log(data)
 
 
-            if (origenWalletBalance > tokenAmount) {
+            if (OGUSDTBalance > tokenAmount) {
                 sellOrigen(data)
             } else {
                 Swal.fire({
@@ -255,11 +304,7 @@ const Hero = ({ address, setShowModal }) => {
         if (usdtAmount == 0 || tokenAmount == 0 || tokenReceiverAddress.lenght > 42) {
             alert('fill the gaps')
         } else {
-            Swal.fire({
-                title: "Verify your deposit address",
-                text: tokenReceiverAddress,
-                icon: "warning"
-            });
+
             // console.log(usdtAmount, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl)
             let data = { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl }
             console.log(data)
@@ -277,7 +322,7 @@ const Hero = ({ address, setShowModal }) => {
 
             } else if (selectedToken === 'ORIGEN') {
 
-                if (origenWalletBalance > tokenAmount) {
+                if (OGbalanceORIGEN > tokenAmount) {
                     buyORIGEN(data)
                 } else {
                     Swal.fire({
@@ -448,8 +493,34 @@ const Hero = ({ address, setShowModal }) => {
 
 
                                     <div>
-                                        <label className="block text-xl text-gray-400">Spend USDT</label>
-                                        <input value={buyUsdtAmount} onChange={handleBuyUsdtChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#0A1A3A] text-white p-2 rounded border border-white/10" />
+                                        <div className="flex justify-between items-center">
+                                            <label className="block text-xl text-gray-400">Spend USDT</label>
+
+                                            {walletAddress && currentChainId === '0x89' && (
+                                                <span className="text-sm text-gray-500">
+                                                    Balance: {parseFloat(usdtWalletBalance).toFixed(2)}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* 1. Contenedor con posición relativa */}
+                                        <div className="relative mt-1">
+                                            <input
+                                                value={buyUsdtAmount}
+                                                onChange={handleBuyUsdtChange}
+                                                placeholder="0.00"
+                                                type="number"
+                                                // 2. Padding a la derecha para el botón
+                                                className="w-full bg-[#0A1A3A] text-white p-2 pr-14 rounded border border-white/10"
+                                            />
+                                            {/* 3. Botón MAX con posición absoluta */}
+                                            <button
+                                                onClick={handleSetMaxUsdt}
+                                                className="absolute inset-y-0 right-0 px-3 flex items-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-r"
+                                            >
+                                                MAX
+                                            </button>
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-xl text-gray-400">Receive {selectedToken}</label>
@@ -491,9 +562,33 @@ const Hero = ({ address, setShowModal }) => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xl text-gray-400">Spend ORIGEN</label>
-                                        <input value={sellUSDTAmount} onChange={handleSellUsdtChange} placeholder="0.00" type="number" className="w-full mt-1 bg-[#0A1A3A] text-white p-2 rounded border border-white/10" />
+                                        <div className="flex justify-between items-center">
+                                            <label className="block text-xl text-gray-400">Spend ORIGEN</label>
+                                            {walletAddress && currentChainId === '0x2154' && (
+                                                <span className="text-sm text-gray-500">
+                                                    Balance: {parseFloat(origenWalletBalance).toFixed(4)}
+                                                </span>
+                                            )}
+                                        </div>
 
+                                        {/* 1. Contenedor con posición relativa */}
+                                        <div className="relative mt-1">
+                                            <input
+                                                value={sellUSDTAmount}
+                                                onChange={handleSellUsdtChange}
+                                                placeholder="0.00"
+                                                type="number"
+                                                // 2. Padding a la derecha para hacer espacio al botón
+                                                className="w-full bg-[#0A1A3A] text-white p-2 pr-14 rounded border border-white/10"
+                                            />
+                                            {/* 3. Botón con posición absoluta */}
+                                            <button
+                                                onClick={handleSetMaxOrigen}
+                                                className="absolute inset-y-0 right-0 px-3 flex items-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-r"
+                                            >
+                                                MAX
+                                            </button>
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-xl text-gray-400">USDT you receive</label>

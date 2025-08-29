@@ -21,6 +21,8 @@ export function AppWrapper({ children }) {
   const [usdtWalletBalance, setusdtWalletBalance] = useState(0);
   const [origenWalletBalance, setOrigenWalletBalance] = useState(0);
   const [currentChainId, setCurrentChainId] = useState(0)
+  const [OGbalanceORIGEN, setOGbalanceORIGEN] = useState(0);
+  const [OGUSDTBalance, setOGUSDTBalance] = useState(0);
   const network = 137;
   const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
   const USDT_RECEIVER_ADDRESS = "0xf4435beb6daf20265d39284ad2501808c0af6c1d"
@@ -41,9 +43,12 @@ export function AppWrapper({ children }) {
     const {
       balanceUSDT,
       balanceORIGEN,
-      balanceAUKA
+      balanceAUKA,
+      OGbalanceORIGEN,
+      OGUSDTBalance,
     } = await getWalletBalances();
-
+    setOGUSDTBalance(OGUSDTBalance)
+    setOGbalanceORIGEN(OGbalanceORIGEN)
     setOrigenWalletBalance(balanceORIGEN);
     setusdtWalletBalance(balanceUSDT);
     setAukaWalletBalance(balanceAUKA);
@@ -443,7 +448,9 @@ export function AppWrapper({ children }) {
     buyORIGEN,
     network,
     transferUSDTfromAUKA,
-    sellOrigen, aukaWalletBalance, origenWalletBalance, usdtWalletBalance
+    sellOrigen, aukaWalletBalance, origenWalletBalance, usdtWalletBalance,
+    OGbalanceORIGEN,
+    OGUSDTBalance,
 
   };
 
