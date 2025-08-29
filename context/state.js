@@ -433,6 +433,7 @@ export function AppWrapper({ children }) {
   let sharedState = {
     connectWallet,
     currentChainId,
+    setCurrentChainId,
     walletAddress,
     accounts,
     ondkBalance,

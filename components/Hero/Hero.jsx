@@ -16,9 +16,61 @@ const polygonNetworkConfig = {
     network: "polygon",
     networkId: "137",
     networkIdHex: "0x89",
-    usdtAddress: "0xc2132d05d31c914a87c6611c10748aeb04b58e8f" // Dirección del contrato de USDT en Polygon
+    usdtAddress: "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
+    chainId: "0x89", // 137 en hexadecimal
+    chainName: "Polygon Mainnet",
+    nativeCurrency: {
+        name: "MATIC",
+        symbol: "MATIC",
+        decimals: 18,
+    },
+    rpcUrls: ["https://polygon-rpc.com/"],
+    blockExplorerUrls: ["https://polygonscan.com/"],
 };
+export const ordenGlobalNetworkConfig = {
+    chainId: "0x2154", // 8532 en hexadecimal
+    chainName: "Orden Global",
+    nativeCurrency: {
+        name: "ORIGEN", // CAMBIAR: El nombre de tu moneda nativa
+        symbol: "ORIGEN",   // CAMBIAR: El símbolo/ticker de tu moneda
+        decimals: 18,
+    },
+    rpcUrls: ["https://ordenglobal-rpc.com/"],
+    blockExplorerUrls: ["https://www.ordenscan.com"], // Opcional: si tienes un explorador de bloques
+};
+export const switchOrAddNetwork = async (networkConfig) => {
+    // Comprueba si MetaMask está instalado
+    if (!window.ethereum) {
+        alert("Por favor, instala MetaMask para usar esta función.");
+        return;
+    }
 
+    try {
+        // Intenta cambiar a la red
+        await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: networkConfig.chainId }],
+        });
+    } catch (switchError) {
+        // Este error (código 4902) indica que la red no está agregada a MetaMask.
+        if (switchError.code === 4902) {
+            try {
+                // Pide al usuario que agregue la nueva red
+                await window.ethereum.request({
+                    method: "wallet_addEthereumChain",
+                    params: [networkConfig],
+                });
+            } catch (addError) {
+                // El usuario rechazó agregar la red
+                console.error("El usuario rechazó agregar la red:", addError);
+                alert("No se pudo agregar la red a tu billetera.");
+            }
+        } else {
+            // Otro tipo de error (ej: el usuario canceló la solicitud)
+            console.error("No se pudo cambiar de red:", switchError);
+        }
+    }
+};
 
 const Hero = ({ address, setShowModal }) => {
     const [init, setInit] = useState(false);
@@ -49,7 +101,7 @@ const Hero = ({ address, setShowModal }) => {
     });
     // --- CONTEXTO DE LA APP ---
     // Importamos las funciones y saldos del contexto global
-    const { connectWallet, walletAddress, transferAUKA, buyORIGEN, sellOrigen, ondkBalance, transferUSDTfromAUKA, transferUSDTfromORIGEN, aukaWalletBalance, origenWalletBalance, currentChainId, usdtWalletBalance } = useAppContext();
+    const { connectWallet, walletAddress, transferAUKA, buyORIGEN, sellOrigen, ondkBalance, transferUSDTfromAUKA, transferUSDTfromORIGEN, aukaWalletBalance, origenWalletBalance, currentChainId, setCurrentChainId, usdtWalletBalance } = useAppContext();
 
     // --- LÓGICA DE PRECIOS ---
     const tokenPrices = {
@@ -185,7 +237,7 @@ const Hero = ({ address, setShowModal }) => {
     };
 
     const handleBuyOrigen = () => {
-        getBlockchain()
+
         if (currentChainId != '0x89') {
             Swal.fire({
                 title: "Chage to Polygon Network",
@@ -290,6 +342,41 @@ const Hero = ({ address, setShowModal }) => {
         }),
         [],
     );
+
+    const handleSwitchToPolygon = () => {
+        console.log("Intentando cambiar a Polygon...");
+        switchOrAddNetwork(polygonNetworkConfig);
+        setCurrentChainId(polygonNetworkConfig.chainId)
+        console.log(currentChainId)
+    };
+
+    const handleSwitchToOrdenGlobal = () => {
+        console.log("Intentando cambiar a Orden Global...");
+        switchOrAddNetwork(ordenGlobalNetworkConfig);
+        setCurrentChainId(ordenGlobalNetworkConfig.chainId)
+        console.log(currentChainId)
+    };
+    useEffect(() => {
+        const { ethereum } = window;
+
+        // Asegúrate de que MetaMask/ethereum esté disponible
+        if (ethereum) {
+            // Esta función se ejecutará cada vez que el usuario cambie de red en MetaMask
+            const handleChainChanged = (chainId) => {
+                console.log("MetaMask reportó un cambio de red a:", chainId);
+                setCurrentChainId(chainId); // Actualiza el estado global
+            };
+
+            // Suscribirse al evento
+            ethereum.on('chainChanged', handleChainChanged);
+
+            // Es una buena práctica limpiar el listener cuando el componente se desmonte
+            return () => {
+                ethereum.removeListener('chainChanged', handleChainChanged);
+            };
+        }
+    }, []); // El array vacío asegura que esto solo se ejecute una vez
+
     if (!init) return null; // Previene renderizado antes de inicializar partículas
 
     return (
@@ -381,7 +468,7 @@ const Hero = ({ address, setShowModal }) => {
                                                 </button>
                                             ) : (
                                                 // NO, está en la red incorrecta. Mostramos el botón para cambiar de red.
-                                                <button onClick={connectWallet} className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 font-bold py-3 mt-3 rounded text-xl">
+                                                <button onClick={handleSwitchToPolygon} className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 font-bold py-3 mt-3 rounded text-xl">
                                                     Change Network to Polygon
                                                 </button>
                                             )
@@ -424,7 +511,7 @@ const Hero = ({ address, setShowModal }) => {
                                                 </button>
                                             ) : (
                                                 // NO, está en la red incorrecta. Mostramos el botón para cambiar de red.
-                                                <button onClick={connectWallet} className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 font-bold py-3 mt-3 rounded text-xl">
+                                                <button onClick={handleSwitchToOrdenGlobal} className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 font-bold py-3 mt-3 rounded text-xl">
                                                     Change Network to Orden Global
                                                 </button>
                                             )
