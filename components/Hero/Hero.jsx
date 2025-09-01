@@ -229,7 +229,7 @@ const Hero = ({ address, setShowModal }) => {
         const sellPrice = price; // La lógica de precio que tenías
 
         if (price > 0 && newAmount !== "") {
-            const tokenValue = (parseFloat(newAmount) / sellPrice).toFixed(2);
+            const tokenValue = (parseFloat(newAmount) * sellPrice).toFixed(2);
             setSellTokenAmount(tokenValue); // El estado del input "USDT you receive"
         } else {
             setSellTokenAmount("");
