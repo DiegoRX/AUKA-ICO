@@ -167,7 +167,7 @@ const Home = () => {
         <header className="flex items-center justify-between px-6 py-4 bg-[#05071c] border-b border-[#0A1A3A]  z-20">
           <input
             type="text"
-            placeholder="🔍 Búsqueda"
+            placeholder="🔍 Search"
             className="bg-[#0A1A3A] text-white px-4 py-2 rounded w-1/2 placeholder-gray-400"
           />
           {walletAddress && walletAddress.length > 0 ? (<button

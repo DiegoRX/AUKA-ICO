@@ -30,6 +30,10 @@ export function AppWrapper({ children }) {
 
   const AUKA_ADDRESS = "0x6Facc8Df79cEDc6C5065442ce27e915Aa3a26B9B"
 
+  const USDK_ADDRESS = "0xAEaB7Fa98c972e0746471d57F7b5b3538B0aF716";
+  const [usdkWalletBalance, setUsdkWalletBalance] = useState(0);
+  const [OGbalanceUSDK, setOGbalanceUSDK] = useState(0);
+
   const connectWallet = async () => {
     // Tu lógica actual para conectar está bien
     const {
@@ -46,12 +50,15 @@ export function AppWrapper({ children }) {
       balanceAUKA,
       OGbalanceORIGEN,
       OGUSDTBalance,
+      balanceUSDK,
+      OGbalanceUSDK,
     } = await getWalletBalances();
     setOGUSDTBalance(OGUSDTBalance)
     setOGbalanceORIGEN(OGbalanceORIGEN)
     setOrigenWalletBalance(balanceORIGEN);
     setusdtWalletBalance(balanceUSDT);
     setAukaWalletBalance(balanceAUKA);
+    setUsdkWalletBalance(balanceUSDK);
     // setCoffeeContract(coffeeContract); // Asegúrate que esta variable esté definida
     setCurrentChainId(currentChainId);
     setWalletAddress(accounts);
@@ -127,7 +134,12 @@ export function AppWrapper({ children }) {
 
     }
   }
-  getAUKABalance()
+  useEffect(() => {
+    if (walletAddress && walletAddress.length > 0) {
+      // Ahora solo se llama cuando la wallet se conecta
+      getAUKABalance();
+    }
+  }, [walletAddress]);
   const transferAUKA = async (data) => {
     const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data
     if (isNaN(usdtAmount) || isNaN(tokenAmount)) {
@@ -384,6 +396,113 @@ export function AppWrapper({ children }) {
     }
   };
 
+  const buyUSDK = async (data) => {
+    const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data
+    let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
+    let weiUSDKValue = (tokenAmount * 10 ** 18).toString() // USDK usa 18 decimales
+    console.log(usdtAddress, walletAddress[0], USDT_RECEIVER_ADDRESS)
+    let ERC20_ABI = require("@config/abi/erc20.json");
+    let provider = await detectEthereumProvider();
+    if (provider) {
+      const web3Provider = new Web3(window.ethereum);
+      let USDTContract = new web3Provider.eth.Contract(
+        ERC20_ABI,
+        usdtAddress
+      );
+      const resultApprove = await USDTContract.methods
+        .transfer(USDT_RECEIVER_ADDRESS, weiUSDTValue)
+        .send({ from: walletAddress[0] })
+        .on("transactionHash", function (hash) {
+          console.log("Executing...");
+        })
+        .on("receipt", function (receipt) {
+          console.log(receipt);
+          RequestService.post({
+            providerUrl,
+            network,
+            "networkId": String(networkId),
+            "buyerAddress": receipt.from,
+            "tokenName": tokenName, // Será "USDK"
+            "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
+            "tokenReceiverAddress": tokenReceiverAddress,
+            "txHash": receipt.transactionHash,
+            "usdtAddress": USDT_ADDRESS,
+            "usdtAmount": String(usdtAmount),
+            "tokenAmount": String(tokenAmount),
+            "weiUSDTValue": String(weiUSDTValue),
+            "weiTokenValue": String(weiUSDKValue), // Valor en Wei de USDK
+            "approved": true
+          })
+          Swal.fire({
+            title: `${tokenAmount} $USDK sent`, // Mensaje actualizado
+            text: 'Verify your wallet on the OG Network. Tokens may take a few seconds to appear.',
+            icon: "success"
+          });
+
+        })
+        .catch((revertReason) => {
+          console.error("ERROR! Transaction reverted: ", revertReason);
+          Swal.fire({
+            title: "Transacción Fallida",
+            text: "La transacción fue rechazada o ha ocurrido un error. Por favor, inténtalo de nuevo.",
+            icon: "error"
+          });
+        });
+    }
+  }
+  const sellUSDK = async (data) => {
+    const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data;
+    let weiUSDTValue = (usdtAmount * 10 ** 6).toString();
+    let weiUSDKValue = (tokenAmount * 10 ** 18).toString(); // USDK 18 decimales
+
+    let ERC20_ABI = require("@config/abi/erc20.json");
+    let provider = await detectEthereumProvider();
+    if (provider) {
+      const web3Provider = new Web3(window.ethereum);
+      // --- MODIFICACIÓN: Usar Contrato USDK ---
+      let USDKContract = new web3Provider.eth.Contract(
+        ERC20_ABI,
+        USDK_ADDRESS // Usar la nueva dirección
+      );
+      const resultApprove = await USDKContract.methods
+        .transfer(TOKEN_RECEIVER_ADDRESS, weiUSDKValue) // Enviar weiUSDKValue
+        .send({ from: walletAddress[0] }) // Dejar que MetaMask estime el gas
+        .on("transactionHash", function (hash) {
+          console.log("Executing...");
+        })
+        .on("receipt", function (receipt) {
+
+          RequestService.postSell({
+            providerUrl,
+            network,
+            "networkId": String(networkId),
+            "buyerAddress": receipt.from,
+            "tokenName": tokenName, // Será "USDK"
+            "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
+            "tokenReceiverAddress": tokenReceiverAddress,
+            "txHash": receipt.transactionHash,
+            "usdtAddress": USDT_ADDRESS,
+            "usdtAmount": String(usdtAmount),
+            "tokenAmount": String(tokenAmount),
+            "weiUSDTValue": String(weiUSDTValue),
+            "weiTokenValue": String(weiUSDKValue), // Valor en Wei de USDK
+            "approved": true
+          });
+          Swal.fire({
+            title: `${tokenAmount} $USDK sent to`, // Mensaje actualizado
+            text: tokenReceiverAddress,
+            icon: "success"
+          });
+        })
+        .catch((revertReason) => {
+          console.log(
+            "ERROR! Transaction reverted: " +
+            revertReason.receipt
+          );
+        });
+    }
+  }
+
   useEffect(() => {
 
     //  // Agregar console.log antes de la llamada a postSell
@@ -451,6 +570,10 @@ export function AppWrapper({ children }) {
     sellOrigen, aukaWalletBalance, origenWalletBalance, usdtWalletBalance,
     OGbalanceORIGEN,
     OGUSDTBalance,
+    usdkWalletBalance,
+    OGbalanceUSDK,
+    buyUSDK,
+    sellUSDK,
 
   };
 

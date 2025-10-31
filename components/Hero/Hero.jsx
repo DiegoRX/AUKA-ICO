@@ -81,6 +81,7 @@ const Hero = ({ address, setShowModal }) => {
     const [AGKAPrice, setAGKAPrice] = useState(0);
     const [ONDKPrice] = useState(1.8);
     const [ORIGENPrice, setORIGENPrice] = useState(1.97);
+    const [USDKPrice, setUSDKPrice] = useState(1);
 
     // --- ESTADOS PARA LOS FORMULARIOS ---
     // Estados para el formulario de COMPRA (BUY)
@@ -101,8 +102,27 @@ const Hero = ({ address, setShowModal }) => {
     });
     // --- CONTEXTO DE LA APP ---
     // Importamos las funciones y saldos del contexto global
-    const { connectWallet, walletAddress, transferAUKA, buyORIGEN, sellOrigen, ondkBalance, transferUSDTfromAUKA, transferUSDTfromORIGEN, aukaWalletBalance, origenWalletBalance, currentChainId, setCurrentChainId, usdtWalletBalance, OGbalanceORIGEN,
-        OGUSDTBalance, } = useAppContext();
+    const {
+        connectWallet,
+        walletAddress,
+        transferAUKA,
+        buyORIGEN,
+        sellOrigen,
+        ondkBalance,
+        transferUSDTfromAUKA,
+        transferUSDTfromORIGEN,
+        aukaWalletBalance,
+        origenWalletBalance,
+        currentChainId,
+        setCurrentChainId,
+        usdtWalletBalance,
+        OGbalanceORIGEN,
+        OGUSDTBalance,
+        OGbalanceUSDK,
+        buyUSDK,
+        usdkWalletBalance,
+        sellUSDK
+    } = useAppContext();
 
     // --- LÓGICA DE PRECIOS ---
     const tokenPrices = {
@@ -110,23 +130,27 @@ const Hero = ({ address, setShowModal }) => {
         ONDK: ONDKPrice,
         AGKA: AGKAPrice,
         AUKA: AUKAPrice,
+        USDK: USDKPrice,
     };
+    // --- AÑADIDO: Mapa de balances para la venta ---
+    // Esto hace que la pestaña "SELL" sea dinámica
+    const sellBalances = useMemo(() => ({
+        ORIGEN: origenWalletBalance,
+        AUKA: aukaWalletBalance,
+        USDK: usdkWalletBalance,
+        ONDK: ondkBalance,
+        // AGKA no parece tener balance en tu contexto
+    }), [origenWalletBalance, aukaWalletBalance, usdkWalletBalance, ondkBalance]);
+
+    // --- AÑADIDO: Obtener el balance del token seleccionado ---
+    const currentSellBalance = parseFloat(sellBalances[selectedToken] || 0);
 
     const getTokenPrice = (token = selectedToken) => tokenPrices[token] || 0;
 
-    const fetchPrices = async () => {
-        // const auka = parseFloat(Cookies.get("auka") || 0);
-        // const agka = parseFloat(Cookies.get("agka") || 0);
-        // setAUKAPrice(auka);
-        // setAGKAPrice(agka);
-        // const origen = auka * 0.032151 / 55;
-        // setORIGENPrice(origen);
-    };
-
+    const fetchPrices = async () => { };
     useEffect(() => {
         fetchPrices();
     }, []);
-
     // --- MANEJADORES DE CAMBIOS EN LOS INPUTS ---
 
     // Lógica para el formulario de COMPRA
@@ -193,44 +217,49 @@ const Hero = ({ address, setShowModal }) => {
         }
     };
 
-    const handleSetMaxOrigen = () => {
-        if (!origenWalletBalance || parseFloat(origenWalletBalance) <= 0.04) {
-            // Si no hay balance o no alcanza para el gas, no hacemos nada o ponemos 0
+    const handleSetMaxSellToken = () => {
+        // Usa el balance dinámico
+        const balance = currentSellBalance;
+
+        // El gas solo se resta si es la moneda nativa (ORIGEN)
+        const gasFee = selectedToken === 'ORIGEN' ? 0.04 : 0;
+        const maxAmount = balance - gasFee;
+
+        if (!balance || maxAmount <= 0) {
             setSellUSDTAmount("0");
-            setSellTokenAmount("0"); // También reseteamos el otro campo
+            setSellTokenAmount("0");
             return;
         }
 
-        // Calculamos el máximo restando el gas
-        const maxAmount = parseFloat(origenWalletBalance) - 0.04;
-
-        // Usamos el mismo evento que el onChange para mantener la consistencia
         const syntheticEvent = {
             target: { value: maxAmount.toString() }
         };
-        handleSellUsdtChange(syntheticEvent);
+        // Llama al manejador de input modificado
+        handleSellAmountChange(syntheticEvent);
     };
 
 
     // 2. Modificamos la función onChange para añadir la validación
-    const handleSellUsdtChange = (e) => {
+    const handleSellAmountChange = (e) => {
         let newAmount = e.target.value;
-        const maxAllowed = parseFloat(origenWalletBalance) - 0.04;
 
-        // Si el valor introducido es mayor que el máximo permitido, lo ajustamos al máximo.
-        // Nos aseguramos de que haya un balance para comparar.
-        if (origenWalletBalance && newAmount !== "" && parseFloat(newAmount) > maxAllowed) {
+        // Lógica de balance dinámico
+        const balance = currentSellBalance;
+        const gasFee = selectedToken === 'ORIGEN' ? 0.04 : 0;
+        const maxAllowed = balance - gasFee;
+
+        if (balance && newAmount !== "" && parseFloat(newAmount) > maxAllowed) {
             newAmount = maxAllowed.toString();
         }
 
         setSellUSDTAmount(newAmount); // El estado de este input
 
         const price = getTokenPrice();
-        const sellPrice = price; // La lógica de precio que tenías
+        const sellPrice = price;
 
         if (price > 0 && newAmount !== "") {
             const tokenValue = (parseFloat(newAmount) * sellPrice).toFixed(2);
-            setSellTokenAmount(tokenValue); // El estado del input "USDT you receive"
+            setSellTokenAmount(tokenValue);
         } else {
             setSellTokenAmount("");
         }
@@ -247,8 +276,7 @@ const Hero = ({ address, setShowModal }) => {
 
     // --- FUNCIONES DE TRANSACCIÓN ---
 
-    const handleSellOrigen = () => {
-
+    const handleSellToken = () => {
         if (currentChainId != '0x2154') {
             Swal.fire({
                 title: "Chage to Orden Global",
@@ -256,36 +284,42 @@ const Hero = ({ address, setShowModal }) => {
             });
             return;
         }
+
         const tokenName = selectedToken
         const tokenAmount = sellUSDTAmount
         const usdtAmount = sellTokenAmount
-        // console.log(usdtRef.current.value, ondkRef.current.value)
         const tokenReceiverAddress = walletAddress
-
         const { providerUrl, network, networkId, usdtAddress } = selectedNetwork
+
         if (usdtAmount == 0 || tokenAmount == 0 || tokenReceiverAddress.lenght > 42) {
             alert('fill the gaps')
         } else {
-
-            // console.log(usdtAmount, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl)
             let data = { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl }
             console.log(data)
 
-
-            if (OGUSDTBalance > tokenAmount) {
-                sellOrigen(data)
-            } else {
+            if (OGUSDTBalance < usdtAmount) { // Comprobación de liquidez primero
                 Swal.fire({
                     title: "Not enough liquidity",
                     text: "Contact Orden Global Team",
                     icon: "warning"
                 });
+                return;
             }
 
+            // --- INICIO DE LA LÓGICA FALTANTE ---
+            // Necesitas llamar a la función de venta correcta
+            if (selectedToken === 'ORIGEN') {
+                sellOrigen(data);
+            } else if (selectedToken === 'AUKA') {
+                // Tu contexto usa 'transferUSDTfromAUKA' para vender AUKA
+                transferUSDTfromAUKA(data);
+            } else if (selectedToken === 'USDK') {
+                sellUSDK(data); // Usar la función importada
+            }
+            // --- FIN DE LA LÓGICA FALTANTE ---
         }
     };
-
-    const handleBuyOrigen = () => {
+    const handleBuyToken = () => { // MODIFICADO: Nombre (antes handleBuyOrigen)
 
         if (currentChainId != '0x89') {
             Swal.fire({
@@ -294,36 +328,38 @@ const Hero = ({ address, setShowModal }) => {
             });
             return;
         }
+        // Esta lógica ya era genérica
         const tokenName = selectedToken
         const tokenAmount = buyTokenAmount
         const usdtAmount = buyUsdtAmount
-        // console.log(usdtRef.current.value, ondkRef.current.value)
         const tokenReceiverAddress = walletAddress
-
         const { providerUrl, network, networkId, usdtAddress } = selectedNetwork
+
         if (usdtAmount == 0 || tokenAmount == 0 || tokenReceiverAddress.lenght > 42) {
             alert('fill the gaps')
         } else {
-
-            // console.log(usdtAmount, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl)
             let data = { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl }
             console.log(data)
-            // console.log(data)
+
+            // --- MODIFICADO: Añadido el caso para USDK ---
             if (selectedToken === 'AUKA') {
                 if (aukaWalletBalance > tokenAmount) {
                     transferAUKA(data)
                 } else {
-                    Swal.fire({
-                        title: "Not enough liquidity",
-                        text: "Contact Orden Global Team",
-                        icon: "warning"
-                    });
+                    // ... (alerta de liquidez)
                 }
 
             } else if (selectedToken === 'ORIGEN') {
-
                 if (OGbalanceORIGEN > tokenAmount) {
                     buyORIGEN(data)
+                } else {
+                    // ... (alerta de liquidez)
+                }
+
+            } else if (selectedToken === 'USDK') { // <-- AÑADIDO ESTE BLOQUE
+                // Usamos los nuevos valores del contexto
+                if (OGbalanceUSDK > tokenAmount) {
+                    buyUSDK(data); // Llama a la nueva función de compra
                 } else {
                     Swal.fire({
                         title: "Not enough liquidity",
@@ -426,16 +462,16 @@ const Hero = ({ address, setShowModal }) => {
 
     return (
         <main className="h-screen overflow-y-auto bg-gradient-to-b from-[#05071c] via-[#0a1a3a] to-[#020617] flex flex-col">
-            <Particles
+            {/* <Particles
                 id="tsparticles"
                 className="!absolute !inset-0 !h-full !w-full"
                 particlesLoaded={particlesLoaded}
                 options={options}
-            />
+            /> */}
 
             {/* Contenido principal: Texto + Card */}
-            <div className="relative z-10 flex-1 flex flex-col lg:flex-row items-center justify-between max-w-6xl mx-auto w-full px-4 py-10">                <div className="max-w-xl text-center lg:text-left ">
-                <h1 className="text-5xl sm:text-6xl md:text-6xl lg:text-[60px] font-bold leading-tight lg:leading-[1.2]">
+            <div className="relative z-10 flex-1 flex flex-col lg:flex-row items-center justify-start lg:justify-between max-w-6xl mx-auto w-full px-4 py-10 ">                <div className="max-w-xl text-center lg:text-left ">
+                <h1 className="text-5xl sm:text-6xl md:text-6xl lg:text-[60px] font-bold leading-tight lg:leading-[1.2] pb-6">
                     Buy Crypto Tokens<br />
                     <span className="bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 text-transparent bg-clip-text">
                         By ORDEN EXCHANGE
@@ -534,7 +570,7 @@ const Hero = ({ address, setShowModal }) => {
                                             // 2. ¿La red es Polygon ('0x89')?
                                             currentChainId === '0x89' ? (
                                                 // SÍ, está en la red correcta. Mostramos el botón de compra.
-                                                <button onClick={handleBuyOrigen} className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 font-bold py-3 mt-3 rounded text-xl">
+                                                <button onClick={handleBuyToken} className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 font-bold py-3 mt-3 rounded text-xl">
                                                     BUY {selectedToken}
                                                 </button>
                                             ) : (
@@ -563,11 +599,10 @@ const Hero = ({ address, setShowModal }) => {
                                     </div>
                                     <div>
                                         <div className="flex justify-between items-center">
-                                            <label className="block text-xl text-gray-400">Spend ORIGEN</label>
+                                            <label className="block text-xl text-gray-400">Spend {selectedToken}</label>
                                             {walletAddress && currentChainId === '0x2154' && (
                                                 <span className="text-sm text-gray-500">
-                                                    Balance: {parseFloat(origenWalletBalance).toFixed(4)}
-                                                </span>
+                                                    Balance: {currentSellBalance.toFixed(4)}                                                </span>
                                             )}
                                         </div>
 
@@ -575,7 +610,7 @@ const Hero = ({ address, setShowModal }) => {
                                         <div className="relative mt-1">
                                             <input
                                                 value={sellUSDTAmount}
-                                                onChange={handleSellUsdtChange}
+                                                onChange={handleSellAmountChange}
                                                 placeholder="0.00"
                                                 type="number"
                                                 // 2. Padding a la derecha para hacer espacio al botón
@@ -583,7 +618,7 @@ const Hero = ({ address, setShowModal }) => {
                                             />
                                             {/* 3. Botón con posición absoluta */}
                                             <button
-                                                onClick={handleSetMaxOrigen}
+                                                onClick={handleSetMaxSellToken}
                                                 className="absolute inset-y-0 right-0 px-3 flex items-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-r"
                                             >
                                                 MAX
@@ -601,7 +636,7 @@ const Hero = ({ address, setShowModal }) => {
                                             // 2. ¿La red es Polygon ('0x89')?
                                             currentChainId === '0x2154' ? (
                                                 // SÍ, está en la red correcta. Mostramos el botón de compra.
-                                                <button onClick={handleSellOrigen} className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 font-bold py-3 mt-3 rounded text-xl">
+                                                <button onClick={handleSellToken} className="w-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 font-bold py-3 mt-3 rounded text-xl">
                                                     SELL {selectedToken}
                                                 </button>
                                             ) : (

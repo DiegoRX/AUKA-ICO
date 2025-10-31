@@ -29,6 +29,12 @@ const TokenSelect = ({ selectedToken, onChange, prices }) => {
             price: prices.ORIGEN?.toFixed(2),
             image: "https://www.vetawallet.com/origen.png",
         },
+        {
+            value: "USDK",
+            label: "USDK",
+            price: prices.USDK?.toFixed(2),
+            image: "https://www.vetawallet.com/OG_USD.png",
+        },
     ];
     const customSingleValue = ({ data }) => (
         <div className="flex items-center gap-2">
