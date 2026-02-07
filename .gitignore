@@ -30,6 +30,28 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.staging
+.env.production
+*.env.*
+
+# Secrets
+*.key
+*.priv
+*.pem
+secrets.json
+credentials.json
+
+# IDE / Editor-specific files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # vercel
 .vercel

@@ -163,11 +163,9 @@ const Home = () => {
     }, []);
 
     // Fetch quote when token or amount changes
-    const fetchQuote = useCallback(async () => {
+    const fetchQuote = useCallback(async (forceUpdate = false) => {
         if (!tokenAmount || parseFloat(tokenAmount) <= 0) return;
 
-        // Only fetch/update if we are driving from Token input
-        // OR if we just want to update rate
         try {
             const response = await fetch(`${API_BASE_URL}/api/orders/quote`, {
                 method: 'POST',
@@ -181,11 +179,10 @@ const Home = () => {
 
             if (response.ok) {
                 const quote = await response.json();
-                if (lastChanged === 'token') {
+                if (lastChanged === 'token' || forceUpdate) {
                     setUsdtAmount(quote.paymentAmount);
                 }
                 setExchangeRate(quote.exchangeRate);
-                // Si la moneda es BNB, el exchangeRate que viene es Token -> BNB
             }
         } catch (error) {
             console.error('Failed to fetch quote:', error);
@@ -195,19 +192,18 @@ const Home = () => {
     }, [tokenAmount, selectedToken.symbol, lastChanged, paymentCurrency]);
 
     useEffect(() => {
-        // Debounce only if token changed?
         const debounce = setTimeout(() => {
-            fetchQuote();
+            fetchQuote(lastChanged === 'token' || true); // Force update if currency changes
         }, 500);
         return () => clearTimeout(debounce);
-    }, [fetchQuote]);
+    }, [tokenAmount, selectedToken.symbol, paymentCurrency]);
 
     // Handle USDT Input Change
     const handleUsdtChange = (value: string) => {
         let newValue = value;
 
         // Validation only applies if we are Paying USDT (Buy Mode)
-        if (mode === 'buy') {
+        if (mode === 'buy' && paymentMethod === 'metamask') {
             const maxAllowed = parseFloat(usdtWalletBalance as any || '0');
             if (newValue !== "" && parseFloat(newValue) > maxAllowed) {
                 newValue = maxAllowed.toString();
@@ -216,6 +212,11 @@ const Home = () => {
 
         setUsdtAmount(newValue);
         setLastChanged('usdt');
+
+        if (newValue === '') {
+            setTokenAmount('');
+            return;
+        }
 
         const rate = parseFloat(exchangeRate);
         if (rate > 0 && newValue && !isNaN(parseFloat(newValue))) {
@@ -242,14 +243,14 @@ const Home = () => {
 
         setTokenAmount(newValue);
         setLastChanged('token');
-        // fetchQuote/useEffect will handle USDT calculation if we trigger it or rely on generic effect
-        // NOTE: The separate useEffect [tokenAmount, selectedToken] fetches quote from backend.
-        // We might want to calculate INSTANTLY locally for Sell?
-        // User code does local calc. My code does Fetch.
-        // I will stick to Fetch (it updates usdtAmount) but it might be slower.
-        // Wait, fetchQuote updates usdtAmount ONLY if lastChanged === 'token'.
-        // So it works.
     };
+
+    // Auto-set max balance when context changes
+    useEffect(() => {
+        if (walletAddress && walletAddress.length > 0) {
+            handleSetMax();
+        }
+    }, [walletAddress, mode, selectedToken, paymentCurrency]);
 
     const handleSetMax = () => {
         if (mode === 'buy') {
