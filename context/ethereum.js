@@ -14,6 +14,72 @@ const POLYGON_PARAMS = {
   blockExplorerUrls: ["https://polygonscan.com/"],
 };
 
+export const OG_PARAMS = {
+  chainId: "0x2154", // 8532 en hexadecimal
+  chainName: "Orden Global Network",
+  nativeCurrency: {
+    name: "ORIGEN",
+    symbol: "ORIGEN",
+    decimals: 18,
+  },
+  rpcUrls: ["https://rpc.ordenglobal-rpc.com"],
+  blockExplorerUrls: ["https://scan.ordenglobal.io"],
+};
+
+export const BSC_PARAMS = {
+  chainId: "0x38", // 56 en hexadecimal
+  chainName: "Binance Smart Chain",
+  nativeCurrency: {
+    name: "BNB",
+    symbol: "BNB",
+    decimals: 18,
+  },
+  rpcUrls: ["https://bsc-dataseed.binance.org/"],
+  blockExplorerUrls: ["https://bscscan.com/"],
+};
+
+export const ETH_PARAMS = {
+  chainId: "0x1", // 1 en hexadecimal
+  chainName: "Ethereum Mainnet",
+  nativeCurrency: {
+    name: "Ether",
+    symbol: "ETH",
+    decimals: 18,
+  },
+  rpcUrls: ["https://mainnet.infura.io/v3/"],
+  blockExplorerUrls: ["https://etherscan.io/"],
+};
+
+export const switchNetwork = async (chainId) => {
+  if (!window.ethereum) return;
+
+  let params;
+  if (chainId === OG_PARAMS.chainId) params = OG_PARAMS;
+  else if (chainId === "0x38" || chainId === "56") params = BSC_PARAMS;
+  else if (chainId === "0x1" || chainId === "1") params = ETH_PARAMS;
+  else params = POLYGON_PARAMS; // Default to Polygon
+
+  try {
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: params.chainId }],
+    });
+  } catch (switchError) {
+    if (switchError.code === 4902) {
+      try {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [params],
+        });
+      } catch (addError) {
+        console.error("Failed to add network:", addError);
+      }
+    } else {
+      console.error("Failed to switch network:", switchError);
+    }
+  }
+};
+
 const getBlockchain = () =>
   new Promise(async (resolve, reject) => {
     const provider = await detectEthereumProvider();
@@ -24,37 +90,18 @@ const getBlockchain = () =>
     }
 
     try {
-      // Solicita acceso a las cuentas
+      // Request access to accounts
       const accounts = await provider.request({
         method: "eth_requestAccounts",
       });
 
-      // Verifica y cambia la red a BNB Smart Chain si es necesario
+      // Verify and change network if necessary
       const currentChainId = await provider.request({ method: "eth_chainId" });
-      // if (currentChainId !== POLYGON_PARAMS.chainId) {
-      //   try {
-      //     await provider.request({
-      //       method: "wallet_switchEthereumChain",
-      //       params: [{ chainId: POLYGON_PARAMS.chainId }],
-      //     });
-      //   } catch (switchError) {
-      //     // Si la red no está agregada, intenta agregarla
-      //     if (switchError.code === 4902) {
-      //       try {
-      //         await provider.request({
-      //           method: "wallet_addEthereumChain",
-      //           params: [POLYGON_PARAMS],
-      //         });
-      //       } catch (addError) {
-      //         return reject("Failed to add BSC network to MetaMask.");
-      //       }
-      //     } else {
-      //       return reject("Failed to switch to BSC network.");
-      //     }
-      //   }
-      // }
 
-      // Una vez en la red correcta, continúa
+      // We don't force switch here anymore, we do it in action.
+      // But we could optionally check.
+
+      // Once on the correct network, continue
       const web3Provider = new Web3(window.ethereum);
       const addresses = await web3Provider.eth.getAccounts();
 

@@ -5,7 +5,7 @@ class RequestService {
   constructor() {
     /* */
     this.version = 'tokens';
-    this.urlServer = 'https://ico-back-0f689793b1b5.herokuapp.com/txs';
+    this.urlServer = `${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ico-back-0f689793b1b5.herokuapp.com'}/txs`;
   }
 
   async post(data) {

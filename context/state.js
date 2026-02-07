@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import getBlockchain from "./ethereum.js";
+import getBlockchain, { switchNetwork } from "./ethereum.js";
 import getWalletBalances from './getWalletBalances.js'
 import detectEthereumProvider from "@metamask/detect-provider";
+import Web3 from "web3";
 
 import Swal from 'sweetalert2'
 import RequestService from '@context/axios';
@@ -24,7 +25,6 @@ export function AppWrapper({ children }) {
   const [OGbalanceORIGEN, setOGbalanceORIGEN] = useState(0);
   const [OGUSDTBalance, setOGUSDTBalance] = useState(0);
   const network = 137;
-  const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
   const USDT_RECEIVER_ADDRESS = "0xf4435beb6daf20265d39284ad2501808c0af6c1d"
   const TOKEN_RECEIVER_ADDRESS = "0xf209ff2a16fa367161e455f3b7f90e067eddafa9"
 
@@ -34,37 +34,47 @@ export function AppWrapper({ children }) {
   const [usdkWalletBalance, setUsdkWalletBalance] = useState(0);
   const [OGbalanceUSDK, setOGbalanceUSDK] = useState(0);
 
-  const connectWallet = async () => {
-    // Tu lógica actual para conectar está bien
-    const {
-      currentChainId,
-      accounts,
-      WMATIC_ADDRESS,
-      web3Provider,
-    } = await getBlockchain();
+  const [txPending, setTxPending] = useState(false);
+  const [txHash, setTxHash] = useState('');
 
-    // Asumo que getWalletBalances depende de que la conexión ya esté hecha
-    const {
-      balanceUSDT,
-      balanceORIGEN,
-      balanceAUKA,
-      OGbalanceORIGEN,
-      OGUSDTBalance,
-      balanceUSDK,
-      OGbalanceUSDK,
-    } = await getWalletBalances();
-    setOGUSDTBalance(OGUSDTBalance)
-    setOGbalanceORIGEN(OGbalanceORIGEN)
-    setOrigenWalletBalance(balanceORIGEN);
-    setusdtWalletBalance(balanceUSDT);
-    setAukaWalletBalance(balanceAUKA);
-    setUsdkWalletBalance(balanceUSDK);
-    // setCoffeeContract(coffeeContract); // Asegúrate que esta variable esté definida
-    setCurrentChainId(currentChainId);
-    setWalletAddress(accounts);
-    setWMATIC_ADDRESS(WMATIC_ADDRESS);
-    setWeb3(web3Provider);
-    setAccounts(accounts);
+  const connectWallet = async (preferredChainId = null) => {
+    try {
+      const {
+        currentChainId,
+        accounts,
+        WMATIC_ADDRESS,
+        web3Provider,
+      } = await getBlockchain();
+
+      const targetChainId = preferredChainId || currentChainId;
+
+      const {
+        balanceUSDT,
+        balanceORIGEN,
+        balanceAUKA,
+        userAUKA,
+        OGbalanceORIGEN,
+        OGUSDTBalance,
+        balanceUSDK,
+        OGbalanceUSDK,
+      } = await getWalletBalances(targetChainId, accounts[0]);
+
+      setOGUSDTBalance(OGUSDTBalance);
+      setOGbalanceORIGEN(OGbalanceORIGEN);
+      setOGbalanceUSDK(OGbalanceUSDK);
+      setOrigenWalletBalance(balanceORIGEN);
+      setusdtWalletBalance(balanceUSDT);
+      setAukaWalletBalance(balanceAUKA); // Treasury
+      setOndkBalance(userAUKA); // User AUKA
+      setUsdkWalletBalance(balanceUSDK);
+      setCurrentChainId(currentChainId);
+      setWalletAddress(accounts);
+      setWMATIC_ADDRESS(WMATIC_ADDRESS);
+      setWeb3(web3Provider);
+      setAccounts(accounts);
+    } catch (error) {
+      console.error("connectWallet error:", error);
+    }
   };
 
   // --- REEMPLAZA TU USEEFFECT CON ESTOS DOS ---
@@ -81,26 +91,24 @@ export function AppWrapper({ children }) {
   useEffect(() => {
     // Verifica si MetaMask está instalado
     if (window.ethereum) {
-      // --- Listener para el cambio de red ---
+      // --- Network change listener ---
       const handleChainChanged = (chainId) => {
-        console.log("Red cambiada a:", chainId);
-        setCurrentChainId(chainId)
-        // Recargar la página es la forma más segura de asegurar que el estado de la DApp se reinicie correctamente.
-
+        console.log("Network changed to:", chainId);
+        setCurrentChainId(chainId);
+        // Refresh balances when network changes
+        connectWallet();
       };
 
-      // --- Listener para el cambio de cuenta ---
+      // --- Account change listener ---
       const handleAccountsChanged = (accounts) => {
-        console.log("Cuenta cambiada a:", accounts[0]);
+        console.log("Account changed to:", accounts[0]);
         if (accounts.length > 0) {
-          // Si el usuario cambia de cuenta, vuelve a conectar para actualizar los saldos y datos.
+          // If the user changes account, reconnect to update balances and data.
           connectWallet();
         } else {
-          // El usuario se ha desconectado
-          // Aquí deberías limpiar el estado de la billetera.
+          // The user has disconnected
           setWalletAddress([]);
           setAccounts([]);
-          // ...etc
         }
       };
 
@@ -117,31 +125,10 @@ export function AppWrapper({ children }) {
   }, []);
 
 
-  const getAUKABalance = async () => {
-    let ERC20_ABI = require("@config/abi/erc20.json");
-    let provider = await detectEthereumProvider();
-    if (provider) {
-      const web3Provider = new Web3(window.ethereum);
-      let AUKAContract = new web3Provider.eth.Contract(
-        ERC20_ABI,
-        AUKA_ADDRESS
-      );
-      const aukaWalletBalance = await AUKAContract.methods.balanceOf('0x8E839Af7A405f49bf72B239929b8ee3c07Ee7ba0').call()
-      setAukaWalletBalance(Number(aukaWalletBalance) / 10 ** 18)
-      const resultApprove = await AUKAContract.methods.balanceOf(walletAddress[0]).call()
-      let finalBalance = resultApprove / 10 ** 18
-      setOndkBalance(finalBalance)
 
-    }
-  }
-  useEffect(() => {
-    if (walletAddress && walletAddress.length > 0) {
-      // Ahora solo se llama cuando la wallet se conecta
-      getAUKABalance();
-    }
-  }, [walletAddress]);
   const transferAUKA = async (data) => {
     const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data
+    if (networkId) await switchNetwork(networkId);
     if (isNaN(usdtAmount) || isNaN(tokenAmount)) {
       console.error("Invalid input: usdtAmount or tokenAmount is not a number");
       return;
@@ -163,9 +150,11 @@ export function AppWrapper({ children }) {
       );
       const resultApprove = await USDCContract.methods
         .transfer(USDT_RECEIVER_ADDRESS, weiUSDTValue)
-        .send({ from: walletAddress[0], gas: 0, value: 0 })
+        .send({ from: walletAddress[0], value: 0, type: '0x0' })
         .on("transactionHash", function (hash) {
           console.log("Executing...");
+          setTxPending(true);
+          setTxHash(hash);
         })
         .on("receipt", function (receipt) {
           console.log(receipt);
@@ -178,7 +167,7 @@ export function AppWrapper({ children }) {
             "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
             "tokenReceiverAddress": tokenReceiverAddress,
             "txHash": receipt.transactionHash,
-            "usdtAddress": USDT_ADDRESS,
+            "usdtAddress": usdtAddress,
             "usdtAmount": String(usdtAmount),
             "tokenAmount": String(tokenAmount),
             "weiUSDTValue": String(weiUSDTValue),
@@ -188,20 +177,26 @@ export function AppWrapper({ children }) {
           Swal.fire({
             title: `${tokenAmount} $AUKA sent to`,
             text: tokenReceiverAddress,
-            icon: "success"
+            icon: "success",
+            background: '#1E2329',
+            color: '#ffffff',
+            confirmButtonColor: '#fcd436'
           });
-          getAUKABalance()
+          getAUKABalance();
+          setTxPending(false);
         })
         .catch((revertReason) => {
           console.log(
             "ERROR! Transaction reverted: " +
             revertReason.receipt
           );
+          setTxPending(false);
         });
     }
   }
   const buyORIGEN = async (data) => {
     const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data
+    if (networkId) await switchNetwork(networkId);
     let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
     let weiORIGENValue = (tokenAmount * 10 ** 18).toString()
     console.log(usdtAddress, walletAddress[0], USDT_RECEIVER_ADDRESS)
@@ -215,9 +210,11 @@ export function AppWrapper({ children }) {
       );
       const resultApprove = await USDTContract.methods
         .transfer(USDT_RECEIVER_ADDRESS, weiUSDTValue)
-        .send({ from: walletAddress[0] })
+        .send({ from: walletAddress[0], type: '0x0' })
         .on("transactionHash", function (hash) {
           console.log("Executing...");
+          setTxPending(true);
+          setTxHash(hash);
         })
         .on("receipt", function (receipt) {
           console.log(receipt);
@@ -230,7 +227,7 @@ export function AppWrapper({ children }) {
             "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
             "tokenReceiverAddress": tokenReceiverAddress,
             "txHash": receipt.transactionHash,
-            "usdtAddress": USDT_ADDRESS,
+            "usdtAddress": usdtAddress,
             "usdtAmount": String(usdtAmount),
             "tokenAmount": String(tokenAmount),
             "weiUSDTValue": String(weiUSDTValue),
@@ -240,22 +237,30 @@ export function AppWrapper({ children }) {
           Swal.fire({
             title: `${tokenAmount} $ORIGEN sent`,
             text: 'Verify your wallet on the OG Network. Tokens may take a few seconds to appear.',
-            icon: "success"
+            icon: "success",
+            background: '#1E2329',
+            color: '#ffffff',
+            confirmButtonColor: '#fcd436'
           });
-
+          setTxPending(false);
         })
         .catch((revertReason) => {
           console.error("ERROR! Transaction reverted: ", revertReason);
           Swal.fire({
-            title: "Transacción Fallida",
-            text: "La transacción fue rechazada o ha ocurrido un error. Por favor, inténtalo de nuevo.",
-            icon: "error"
+            title: "Transaction Failed",
+            text: "The transaction was rejected or an error occurred. Please try again.",
+            icon: "error",
+            background: '#1E2329',
+            color: '#ffffff',
+            confirmButtonColor: '#fcd436'
           });
+          setTxPending(false);
         });
     }
   }
 
   const transferUSDTfromAUKA = async (data) => {
+    await switchNetwork('0x2154'); // Keep forcing OG for Selling AUKA
     const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data
     let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
     let weiAUKAValue = (tokenAmount * 10 ** 18).toString()
@@ -273,6 +278,8 @@ export function AppWrapper({ children }) {
         .send({ from: walletAddress[0], gas: 200000, value: 0, gasLimit: 21000 })
         .on("transactionHash", function (hash) {
           console.log("Executing...");
+          setTxPending(true);
+          setTxHash(hash);
         })
         .on("receipt", function (receipt) {
 
@@ -285,7 +292,7 @@ export function AppWrapper({ children }) {
             "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
             "tokenReceiverAddress": tokenReceiverAddress,
             "txHash": receipt.transactionHash,
-            "usdtAddress": USDT_ADDRESS,
+            "usdtAddress": usdtAddress,
             "usdtAmount": String(usdtAmount),
             "tokenAmount": String(tokenAmount),
             "weiUSDTValue": String(weiUSDTValue),
@@ -295,15 +302,20 @@ export function AppWrapper({ children }) {
           Swal.fire({
             title: `${tokenAmount} $AUKA sent to`,
             text: tokenReceiverAddress,
-            icon: "success"
+            icon: "success",
+            background: '#1E2329',
+            color: '#ffffff',
+            confirmButtonColor: '#fcd436'
           });
-          getAUKABalance()
+          getAUKABalance();
+          setTxPending(false);
         })
         .catch((revertReason) => {
           console.log(
             "ERROR! Transaction reverted: " +
             revertReason.receipt
           );
+          setTxPending(false);
         });
     }
   }
@@ -333,6 +345,8 @@ export function AppWrapper({ children }) {
           .on("transactionHash", function (hash) {
             console.log("Executing...");
             console.log("Transaction hash:", hash);
+            setTxPending(true);
+            setTxHash(hash);
           })
           .on("receipt", function (receipt) {
             setTxReceipt(receipt);
@@ -346,7 +360,7 @@ export function AppWrapper({ children }) {
               usdtReceiverAddress: TOKEN_RECEIVER_ADDRESS,
               tokenReceiverAddress: tokenReceiverAddress,
               txHash: receipt.transactionHash,
-              usdtAddress: USDT_ADDRESS,
+              usdtAddress: usdtAddress,
               usdtAmount: String(usdtAmount),
               tokenAmount: String(tokenAmount),
               weiUSDTValue: String(weiUSDTValue),
@@ -361,9 +375,9 @@ export function AppWrapper({ children }) {
               buyerAddress: receipt.from,
               tokenName: tokenName,
               usdtReceiverAddress: TOKEN_RECEIVER_ADDRESS,
-              tokenReceiverAddress: tokenReceiverAddress[0],
+              tokenReceiverAddress: tokenReceiverAddress,
               txHash: receipt.transactionHash,
-              usdtAddress: USDT_ADDRESS,
+              usdtAddress: usdtAddress,
               usdtAmount: String(usdtAmount),
               tokenAmount: String(tokenAmount),
               weiUSDTValue: String(weiUSDTValue),
@@ -376,8 +390,12 @@ export function AppWrapper({ children }) {
               Swal.fire({
                 title: `$${usdtAmount} USDT sent to`,
                 text: tokenReceiverAddress,
-                icon: "success"
+                icon: "success",
+                background: '#1E2329',
+                color: '#ffffff',
+                confirmButtonColor: '#fcd436'
               });
+              setTxPending(false);
             }).catch(error => {
               // Capturar cualquier error en postSell
               console.error('Error en postSell:', error);
@@ -387,6 +405,7 @@ export function AppWrapper({ children }) {
           })
           .on("error", function (error) {
             console.error("Transaction error:", error);
+            setTxPending(false);
           });
       } catch (error) {
         console.error("Transaction failed:", error);
@@ -398,6 +417,7 @@ export function AppWrapper({ children }) {
 
   const buyUSDK = async (data) => {
     const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data
+    if (networkId) await switchNetwork(networkId);
     let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
     let weiUSDKValue = (tokenAmount * 10 ** 18).toString() // USDK usa 18 decimales
     console.log(usdtAddress, walletAddress[0], USDT_RECEIVER_ADDRESS)
@@ -414,6 +434,8 @@ export function AppWrapper({ children }) {
         .send({ from: walletAddress[0] })
         .on("transactionHash", function (hash) {
           console.log("Executing...");
+          setTxPending(true);
+          setTxHash(hash);
         })
         .on("receipt", function (receipt) {
           console.log(receipt);
@@ -426,7 +448,7 @@ export function AppWrapper({ children }) {
             "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
             "tokenReceiverAddress": tokenReceiverAddress,
             "txHash": receipt.transactionHash,
-            "usdtAddress": USDT_ADDRESS,
+            "usdtAddress": usdtAddress,
             "usdtAmount": String(usdtAmount),
             "tokenAmount": String(tokenAmount),
             "weiUSDTValue": String(weiUSDTValue),
@@ -434,23 +456,31 @@ export function AppWrapper({ children }) {
             "approved": true
           })
           Swal.fire({
-            title: `${tokenAmount} $USDK sent`, // Mensaje actualizado
+            title: `${tokenAmount} $USDK sent`,
             text: 'Verify your wallet on the OG Network. Tokens may take a few seconds to appear.',
-            icon: "success"
+            icon: "success",
+            background: '#1E2329',
+            color: '#ffffff',
+            confirmButtonColor: '#fcd436'
           });
-
+          setTxPending(false);
         })
         .catch((revertReason) => {
           console.error("ERROR! Transaction reverted: ", revertReason);
           Swal.fire({
-            title: "Transacción Fallida",
-            text: "La transacción fue rechazada o ha ocurrido un error. Por favor, inténtalo de nuevo.",
-            icon: "error"
+            title: "Transaction Failed",
+            text: "The transaction was rejected or an error occurred. Please try again.",
+            icon: "error",
+            background: '#1E2329',
+            color: '#ffffff',
+            confirmButtonColor: '#fcd436'
           });
+          setTxPending(false);
         });
     }
   }
   const sellUSDK = async (data) => {
+    await switchNetwork('0x2154'); // Keep forcing OG for Selling USDK
     const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data;
     let weiUSDTValue = (usdtAmount * 10 ** 6).toString();
     let weiUSDKValue = (tokenAmount * 10 ** 18).toString(); // USDK 18 decimales
@@ -469,6 +499,8 @@ export function AppWrapper({ children }) {
         .send({ from: walletAddress[0] }) // Dejar que MetaMask estime el gas
         .on("transactionHash", function (hash) {
           console.log("Executing...");
+          setTxPending(true);
+          setTxHash(hash);
         })
         .on("receipt", function (receipt) {
 
@@ -481,7 +513,7 @@ export function AppWrapper({ children }) {
             "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
             "tokenReceiverAddress": tokenReceiverAddress,
             "txHash": receipt.transactionHash,
-            "usdtAddress": USDT_ADDRESS,
+            "usdtAddress": usdtAddress,
             "usdtAmount": String(usdtAmount),
             "tokenAmount": String(tokenAmount),
             "weiUSDTValue": String(weiUSDTValue),
@@ -489,16 +521,21 @@ export function AppWrapper({ children }) {
             "approved": true
           });
           Swal.fire({
-            title: `${tokenAmount} $USDK sent to`, // Mensaje actualizado
+            title: `${tokenAmount} $USDK sent to`,
             text: tokenReceiverAddress,
-            icon: "success"
+            icon: "success",
+            background: '#1E2329',
+            color: '#ffffff',
+            confirmButtonColor: '#fcd436'
           });
+          setTxPending(false);
         })
         .catch((revertReason) => {
           console.log(
             "ERROR! Transaction reverted: " +
             revertReason.receipt
           );
+          setTxPending(false);
         });
     }
   }
@@ -574,9 +611,10 @@ export function AppWrapper({ children }) {
     OGbalanceUSDK,
     buyUSDK,
     sellUSDK,
-
+    txPending,
+    txHash,
+    switchNetwork
   };
-
 
   return (
     <AppContext.Provider value={sharedState}>
