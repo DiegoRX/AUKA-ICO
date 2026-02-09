@@ -55,9 +55,10 @@ const Home = () => {
     const [showTokenSelector, setShowTokenSelector] = useState(false);
 
     // Amounts
-    const [tokenAmount, setTokenAmount] = useState('100');
-    const [usdtAmount, setUsdtAmount] = useState('50');
+    const [tokenAmount, setTokenAmount] = useState('0');
+    const [usdtAmount, setUsdtAmount] = useState('0');
     const [exchangeRate, setExchangeRate] = useState('0.5');
+    const [goldPrice, setGoldPrice] = useState<any>(null);
     const [quoteLoading, setQuoteLoading] = useState(false);
 
     // Payment method
@@ -164,7 +165,8 @@ const Home = () => {
 
     // Fetch quote when token or amount changes
     const fetchQuote = useCallback(async (forceUpdate = false) => {
-        if (!tokenAmount || parseFloat(tokenAmount) <= 0) return;
+        // Obtenemos la cotización incluso si el monto es 0 para actualizar el exchangeRate
+        const amountForQuote = (!tokenAmount || parseFloat(tokenAmount) <= 0) ? '1' : tokenAmount;
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/orders/quote`, {
@@ -172,43 +174,67 @@ const Home = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     tokenSymbol: selectedToken.symbol,
-                    tokenAmount: tokenAmount,
+                    tokenAmount: amountForQuote,
                     paymentCurrency: paymentCurrency,
+                    paymentMethod: paymentMethod,
+                    type: mode,
                 }),
             });
 
             if (response.ok) {
                 const quote = await response.json();
-                if (lastChanged === 'token' || forceUpdate) {
-                    setUsdtAmount(quote.paymentAmount);
+
+                // Only update amount if the original token input was valid (>0)
+                const isZeroAmount = !tokenAmount || parseFloat(tokenAmount) <= 0;
+
+                // Si el usuario cambió los tokens, actualizamos el pago
+                if ((lastChanged === 'token' || forceUpdate) && !isZeroAmount) {
+                    setUsdtAmount(parseFloat(quote.paymentAmount).toFixed(2));
                 }
+                // Si el usuario cambió el pago, el quote del server manda
+                // porque el server tiene la precisión final del oráculo.
+                else if (lastChanged === 'usdt' && !isZeroAmount) {
+                    // Opcional: Podrías actualizar el tokenAmount aquí si el server
+                    // hiciera el cálculo inverso, pero nuestro API recibe tokenAmount.
+                    // Así que el usdtAmount devuelto por el servidor es el "real" 
+                    // para ese tokenAmount que calculamos localmente.
+                    setUsdtAmount(parseFloat(quote.paymentAmount).toFixed(2));
+                }
+
                 setExchangeRate(quote.exchangeRate);
+                if (quote.goldPrice) {
+                    setGoldPrice(quote.goldPrice);
+                }
             }
         } catch (error) {
             console.error('Failed to fetch quote:', error);
         } finally {
             setQuoteLoading(false);
         }
-    }, [tokenAmount, selectedToken.symbol, lastChanged, paymentCurrency]);
+    }, [tokenAmount, selectedToken.symbol, lastChanged, paymentCurrency, paymentMethod]);
+
+    useEffect(() => {
+        fetchQuote(true);
+    }, [selectedToken.symbol, paymentMethod, paymentCurrency]);
 
     useEffect(() => {
         const debounce = setTimeout(() => {
-            fetchQuote(lastChanged === 'token' || true); // Force update if currency changes
-        }, 500);
+            fetchQuote(false);
+        }, 300);
         return () => clearTimeout(debounce);
-    }, [tokenAmount, selectedToken.symbol, paymentCurrency]);
+    }, [tokenAmount]);
+
+    // Force Polygon in Sell Mode
+    useEffect(() => {
+        if (mode === 'sell') {
+            setPaymentMethod('metamask');
+            setPaymentNetworkId('137');
+        }
+    }, [mode]);
 
     // Handle USDT Input Change
     const handleUsdtChange = (value: string) => {
         let newValue = value;
-
-        // Validation only applies if we are Paying USDT (Buy Mode)
-        if (mode === 'buy' && paymentMethod === 'metamask') {
-            const maxAllowed = parseFloat(usdtWalletBalance as any || '0');
-            if (newValue !== "" && parseFloat(newValue) > maxAllowed) {
-                newValue = maxAllowed.toString();
-            }
-        }
 
         setUsdtAmount(newValue);
         setLastChanged('usdt');
@@ -231,26 +257,20 @@ const Home = () => {
     const handleTokenChange = (value: string) => {
         let newValue = value;
 
-        // Validation only applies if we are Paying Token (Sell Mode)
-        if (mode === 'sell') {
-            const gasFee = selectedToken.symbol === 'ORIGEN' ? 0.04 : 0;
-            const maxAllowed = Math.max(0, currentSellBalance - gasFee);
-
-            if (newValue !== "" && parseFloat(newValue) > maxAllowed) {
-                newValue = maxAllowed.toString();
-            }
-        }
-
         setTokenAmount(newValue);
         setLastChanged('token');
+
+        // CALCULO BIDIRECCIONAL LOCAL (Feedback instantáneo)
+        const rate = parseFloat(exchangeRate);
+        if (rate > 0 && newValue && !isNaN(parseFloat(newValue))) {
+            const total = parseFloat(newValue) * rate;
+            setUsdtAmount(total.toFixed(paymentCurrency === 'BNB' ? 6 : 2));
+        } else if (newValue === '') {
+            setUsdtAmount('');
+        }
     };
 
-    // Auto-set max balance when context changes
-    useEffect(() => {
-        if (walletAddress && walletAddress.length > 0) {
-            handleSetMax();
-        }
-    }, [walletAddress, mode, selectedToken, paymentCurrency]);
+    // Se quita el auto-set max por petición del usuario
 
     const handleSetMax = () => {
         if (mode === 'buy') {
@@ -720,10 +740,14 @@ const Home = () => {
                                         />
                                     </div>
                                     <div className="text-2xl font-bold">{usdtWalletBalance?.toFixed(2) || '0.00'}</div>
+                                    <div className="text-xs text-gray-500">≈ ${usdtWalletBalance?.toFixed(2) || '0.00'} USD</div>
                                 </div>
                                 <div className="bg-[#0B0E11] rounded-xl p-4 shadow-inner relative group">
                                     <div className="text-gray-500 text-xs font-semibold mb-1 uppercase tracking-wider">ORIGEN (Orden Global)</div>
                                     <div className="text-2xl font-bold">{origenWalletBalance?.toFixed(2) || '0.00'}</div>
+                                    <div className="text-xs text-gray-500">
+                                        {goldPrice ? `≈ $${(parseFloat(origenWalletBalance as any || '0') * ((parseFloat(goldPrice.ounce) / 31.1035) / 55)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD` : 'Loading...'}
+                                    </div>
                                 </div>
                                 <div className="bg-[#0B0E11] rounded-xl p-4 shadow-inner relative group">
                                     <div className="text-gray-500 text-xs font-semibold mb-1 uppercase tracking-wider flex items-center space-x-1">
@@ -755,6 +779,9 @@ const Home = () => {
                                         />
                                     </div>
                                     <div className="text-2xl font-bold">{ondkBalance?.toFixed(2) || '0.00'}</div>
+                                    <div className="text-xs text-gray-500">
+                                        {goldPrice ? `≈ $${(parseFloat(ondkBalance as any || '0') * parseFloat(goldPrice.ounce)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD` : 'Loading...'}
+                                    </div>
                                 </div>
                                 <div className="bg-[#0B0E11] rounded-xl p-4 shadow-inner relative group">
                                     <div className="text-gray-500 text-xs font-semibold mb-1 uppercase tracking-wider flex items-center space-x-1">
@@ -786,6 +813,7 @@ const Home = () => {
                                         />
                                     </div>
                                     <div className="text-2xl font-bold">{usdkWalletBalance?.toFixed(2) || '0.00'}</div>
+                                    <div className="text-xs text-gray-500">≈ ${usdkWalletBalance?.toFixed(2) || '0.00'} USD</div>
                                 </div>
                             </div>
                         </div>
@@ -816,7 +844,7 @@ const Home = () => {
                             <div className="group">
                                 <div className="flex justify-between items-center mb-1 ml-1">
                                     <label className="text-xs font-medium text-gray-500">
-                                        {mode === 'buy' ? 'You Receive' : 'You Pay'}
+                                        {mode === 'buy' ? 'You Receive' : 'You Sell'}
                                     </label>
                                     {walletAddress.length > 0 && (
                                         <span className="text-xs text-gray-500 cursor-pointer hover:text-[#fcd436]" onClick={handleSetMax}>
@@ -853,7 +881,7 @@ const Home = () => {
                             <div className="group">
                                 <div className="flex justify-between items-center mb-1 ml-1">
                                     <label className="text-xs font-medium text-gray-500 flex items-center">
-                                        {mode === 'buy' ? 'You Pay' : 'You Receive'} <MdInfoOutline className="text-[14px] ml-1 opacity-60" />
+                                        {mode === 'buy' ? 'You Buy' : 'You Receive'} <MdInfoOutline className="text-[14px] ml-1 opacity-60" />
                                     </label>
                                     {paymentMethod === 'metamask' && walletAddress.length > 0 && (
                                         <span className="text-xs text-gray-500 cursor-pointer hover:text-[#fcd436]" onClick={handleSetMax}>
@@ -873,47 +901,67 @@ const Home = () => {
                                         <button onClick={handleSetMax} className="px-2 text-xs font-bold text-[#fcd436] hover:text-white transition-colors mr-2 border border-[#fcd436]/30 rounded bg-[#fcd436]/10">MAX</button>
                                     )}
                                     <div className="flex items-center space-x-2 ml-2">
-                                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white">
-                                            {paymentMethod === 'binance' && paymentCurrency === 'BNB' ? 'B' : '$'}
+                                        <div className="w-10 h-10 flex items-center justify-center overflow-hidden bg-black rounded-full">
+                                            {paymentMethod === 'binance' && paymentCurrency === 'BNB' ? (
+                                                <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.svg" alt="BNB" className="w-6 h-6 object-contain" />
+                                            ) : (
+                                                <img src="https://cryptologos.cc/logos/tether-usdt-logo.svg" alt="USDT" className="w-6 h-6 object-contain" />
+                                            )}
                                         </div>
-                                        <span className="font-bold text-white">{paymentMethod === 'binance' ? paymentCurrency : 'USDT'}</span>
+                                        <span className="font-bold text-white tracking-widest">{paymentMethod === 'binance' ? paymentCurrency : 'USDT'}</span>
                                     </div>
                                 </div>
-                                <div className="text-xs text-gray-500 mt-1 ml-1">
-                                    Rate: 1 {selectedToken.symbol} = {exchangeRate} {paymentMethod === 'binance' ? paymentCurrency : 'USDT'}
-                                </div>
-                            </div>
-
-                            {/* Payment Methods */}
-                            <div className="pt-4 space-y-3">
-                                <label className="block text-xs font-medium text-gray-500 mb-2 ml-1">
-                                    Payment Method
-                                </label>
-
-                                {/* MetaMask Option */}
-                                <div
-                                    onClick={() => setPaymentMethod('metamask')}
-                                    className={`bg-[#0B0E11] rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all duration-300 ${paymentMethod === 'metamask' ? 'ring-2 ring-[#fcd436] shadow-[0_0_15px_rgba(252,212,54,0.1)]' : 'hover:bg-gray-800/50'}`}
-                                >
-                                    <div className="flex items-center space-x-3">
-                                        <div className="w-8 h-8 flex items-center justify-center">
-                                            <MdAccountBalanceWallet className="text-orange-500 text-2xl" />
+                                <div className="flex justify-between items-center mt-1 ml-1">
+                                    <div className="text-xs text-gray-500">
+                                        Rate: 1 {selectedToken.symbol} = {exchangeRate} {paymentMethod === 'binance' ? paymentCurrency : 'USDT'}
+                                    </div>
+                                    {paymentMethod === 'binance' && (
+                                        <div className="text-[10px] text-[#fcd436]/70 italic flex items-center space-x-1">
+                                            <MdInfoOutline size={12} />
+                                            <span>Includes 1.5% Binance fee</span>
                                         </div>
-                                        <div>
-                                            <span className="font-medium text-white">MetaMask</span>
-                                            <div className="flex space-x-2 mt-1">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setPaymentNetworkId('137');
-                                                        setPaymentMethod('metamask');
-                                                        switchNetwork('0x89');
-                                                        connectWallet('137');
-                                                    }}
-                                                    className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '137' && paymentMethod === 'metamask' ? 'bg-purple-600 text-white border-purple-600' : 'text-gray-500 border-gray-700'}`}
-                                                >
-                                                    Polygon
-                                                </button>
+                                    )}
+                                </div>
+                                {goldPrice && (
+                                    <div className="flex justify-between items-center mt-1 ml-1 text-xs text-gray-500">
+                                        <span>Gold Ref: ${parseFloat(goldPrice.ounce).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/oz</span>
+                                        <span className="text-[10px] opacity-70">Updated: {new Date(goldPrice.timestamp).toLocaleTimeString()}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Payment Methods */}
+                        <div className="pt-4 space-y-3">
+                            <label className="block text-xs font-medium text-gray-500 mb-2 ml-1">
+                                Payment Method
+                            </label>
+
+                            {/* MetaMask Option */}
+                            <div
+                                onClick={() => setPaymentMethod('metamask')}
+                                className={`bg-[#0B0E11] rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all duration-300 ${paymentMethod === 'metamask' ? 'ring-2 ring-[#fcd436] shadow-[0_0_15px_rgba(252,212,54,0.1)]' : 'hover:bg-gray-800/50'}`}
+                            >
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-12 h-12 flex items-center justify-center">
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" className="w-11 h-11 object-contain" />
+                                    </div>
+                                    <div>
+                                        <span className="font-medium text-white">MetaMask</span>
+                                        <div className="flex space-x-2 mt-1">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setPaymentNetworkId('137');
+                                                    setPaymentMethod('metamask');
+                                                    switchNetwork('0x89');
+                                                    connectWallet('137');
+                                                }}
+                                                className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '137' && paymentMethod === 'metamask' ? 'bg-purple-600 text-white border-purple-600' : 'text-gray-500 border-gray-700'}`}
+                                            >
+                                                Polygon
+                                            </button>
+                                            {mode === 'buy' && (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -922,10 +970,12 @@ const Home = () => {
                                                         switchNetwork('0x38');
                                                         connectWallet('56');
                                                     }}
-                                                    className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '56' && paymentMethod === 'metamask' ? 'bg-yellow-600 text-black border-yellow-600' : 'text-gray-500 border-gray-700'}`}
+                                                    className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '56' && paymentMethod === 'metamask' ? 'text-yellow-500 border-yellow-500' : 'text-gray-500 border-gray-700'}`}
                                                 >
                                                     BSC
                                                 </button>
+                                            )}
+                                            {mode === 'buy' && (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -938,20 +988,22 @@ const Home = () => {
                                                 >
                                                     Ethereum
                                                 </button>
-                                            </div>
+                                            )}
                                         </div>
                                     </div>
-                                    {paymentMethod === 'metamask' && <MdCheckCircle className="text-[#fcd436] text-xl" />}
                                 </div>
+                                {paymentMethod === 'metamask' && <MdCheckCircle className="text-[#fcd436] text-xl" />}
+                            </div>
 
-                                {/* Binance Pay Option */}
+                            {/* Binance Pay Option */}
+                            {mode === 'buy' && (
                                 <div
                                     onClick={() => setPaymentMethod('binance')}
                                     className={`bg-[#0B0E11] rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all duration-300 ${paymentMethod === 'binance' ? 'ring-2 ring-[#fcd436] shadow-[0_0_15px_rgba(252,212,54,0.1)]' : 'hover:bg-gray-800/50'}`}
                                 >
                                     <div className="flex items-center space-x-3">
-                                        <div className="w-8 h-8 flex items-center justify-center bg-[#F0B90B] rounded-full">
-                                            <MdPayments className="text-black text-sm" />
+                                        <div className="w-12 h-12 flex items-center justify-center bg-black rounded-lg">
+                                            <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.svg" alt="Binance Pay" className="w-8 h-8 object-contain" />
                                         </div>
                                         <div>
                                             <span className="font-medium text-white">Binance Pay</span>
@@ -962,27 +1014,28 @@ const Home = () => {
                                         <div className="flex space-x-2 mt-2 ml-1">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setPaymentCurrency('USDT'); }}
-                                                className={`px-3 py-1 text-xs font-bold rounded-full border transition-all ${paymentCurrency === 'USDT' ? 'bg-[#fcd436] text-black border-[#fcd436]' : 'text-gray-500 border-gray-700 hover:border-gray-500'}`}
+                                                className={`px-3 py-1 text-xs font-bold rounded-full border transition-all ${paymentCurrency === 'USDT' ? 'text-[#fcd436] border-[#fcd436]' : 'text-gray-500 border-gray-700 hover:border-gray-500'}`}
                                             >
                                                 USDT
                                             </button>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setPaymentCurrency('BNB'); }}
-                                                className={`px-3 py-1 text-xs font-bold rounded-full border transition-all ${paymentCurrency === 'BNB' ? 'bg-[#fcd436] text-black border-[#fcd436]' : 'text-gray-500 border-gray-700 hover:border-gray-500'}`}
+                                                className={`px-3 py-1 text-xs font-bold rounded-full border transition-all ${paymentCurrency === 'BNB' ? 'text-[#fcd436] border-[#fcd436]' : 'text-gray-500 border-gray-700 hover:border-gray-500'}`}
                                             >
                                                 BNB Native
                                             </button>
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                            )}
                         </div>
+
 
                         {/* Action Button */}
                         <button
                             onClick={handleAction}
                             disabled={orderLoading || !tokenAmount || parseFloat(tokenAmount) <= 0}
-                            className="w-full bg-gradient-to-r from-[#fcd436] via-[#f0b90b] to-[#f08c0b] text-black font-extrabold py-5 rounded-2xl mt-8 shadow-[0_10px_30px_-5px_rgba(252,213,53,0.4)] hover:shadow-[0_15px_35px_-5px_rgba(252,213,53,0.5)] hover:-translate-y-1 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-xl uppercase tracking-wider"
+                            className="w-full bg-gradient-to-r from-[#fcd436] via-[#f0b90b] to-[#f08c0b] text-black font-extrabold py-4 rounded-2xl mt-8 shadow-[0_10px_30px_-5px_rgba(252,213,53,0.4)] hover:shadow-[0_15px_35px_-5px_rgba(252,213,53,0.5)] hover:-translate-y-1 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-xl uppercase tracking-wider"
                         >
                             {orderLoading ? (
                                 <span className="flex items-center justify-center space-x-2">
@@ -995,227 +1048,232 @@ const Home = () => {
                         </button>
                     </div>
                 </div>
-            </main>
+
+            </main >
 
 
 
             {/* Login Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4">
-                    <div className="bg-[#1E2329] rounded-[32px] shadow-2xl w-full max-w-[420px] p-8 space-y-4 relative border border-gray-800">
-                        <button
-                            className="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl transition-colors"
-                            onClick={() => { setShowModal(false); setShowLoginForm(false); }}
-                        >
-                            <MdClose />
-                        </button>
+            {
+                showModal && (
+                    <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4">
+                        <div className="bg-[#1E2329] rounded-[32px] shadow-2xl w-full max-w-[420px] p-8 space-y-4 relative border border-gray-800">
+                            <button
+                                className="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl transition-colors"
+                                onClick={() => { setShowModal(false); setShowLoginForm(false); }}
+                            >
+                                <MdClose />
+                            </button>
 
-                        {!showLoginForm ? (
-                            <>
-                                <div className="text-center mb-6">
-                                    <h2 className="text-2xl font-bold text-white mb-2">Connect VetaWallet</h2>
-                                    <p className="text-gray-400 text-sm">Choose your preferred connection method</p>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <button className="w-full bg-[#0B0E11] border border-gray-700 py-3 rounded-xl font-semibold hover:border-gray-600 transition-all flex items-center justify-center space-x-2">
-                                        <span className="text-red-500 font-bold">G</span>
-                                        <span>Continue with Google</span>
-                                    </button>
-
-                                    <button
-                                        className="w-full bg-[#fcd436] text-black py-3 rounded-xl font-bold hover:bg-opacity-90 transition-all"
-                                        onClick={() => setShowLoginForm(true)}
-                                    >
-                                        Continue with VetaWallet
-                                    </button>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="text-center mb-6">
-                                    <h2 className="text-2xl font-bold text-white mb-2">Log In</h2>
-                                    <p className="text-gray-400 text-sm">Welcome back to VetaWallet</p>
-                                </div>
-
-                                <form onSubmit={handleSubmit(submitHandler)} className="space-y-4">
-                                    <div>
-                                        <input
-                                            type="email"
-                                            placeholder="Email"
-                                            className="w-full bg-[#0B0E11] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-[#fcd436] outline-none transition-all"
-                                            {...register("email", {
-                                                required: "Required",
-                                                pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i, message: "Invalid email" },
-                                            })}
-                                        />
-                                        {errors.email && <span className="text-red-500 text-xs mt-1">{errors.email.message as string}</span>}
-                                    </div>
-
-                                    <div className="relative">
-                                        <input
-                                            type={showPassword ? "text" : "password"}
-                                            placeholder="Password"
-                                            className="w-full bg-[#0B0E11] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-[#fcd436] outline-none transition-all pr-12"
-                                            {...register("password", { required: "Required" })}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={togglePasswordVisibility}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                                        >
-                                            {showPassword ? <FaRegEyeSlash size={20} /> : <FaRegEye size={20} />}
-                                        </button>
-                                    </div>
-
-                                    <button
-                                        type="submit"
-                                        className="w-full bg-[#fcd436] text-black font-bold py-3 rounded-xl hover:bg-opacity-90 transition-all"
-                                    >
-                                        Login
-                                    </button>
-                                </form>
-
-                                <div className="text-sm text-gray-400 mt-4 text-center">
-                                    New to VetaWallet?{' '}
-                                    <a href="https://www.vetawallet.com/register" className="text-[#fcd436] hover:underline font-semibold" target="_blank" rel="noopener noreferrer">
-                                        Register
-                                    </a>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Binance Pay Modal */}
-            {showPaymentModal && currentOrder && (
-                <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4">
-                    <div className="bg-[#1E2329] rounded-[32px] w-full max-w-md p-8 border border-gray-800 relative">
-                        <button
-                            onClick={() => { setShowPaymentModal(false); setOrderPolling(false); }}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-white"
-                        >
-                            <MdClose size={24} />
-                        </button>
-
-                        <div className="text-center space-y-6">
-                            <div className="bg-[#fcd436]/20 p-4 rounded-full w-fit mx-auto">
-                                <MdPayments className="text-[#fcd436] text-4xl" />
-                            </div>
-
-                            <div>
-                                <h3 className="text-2xl font-bold text-white mb-2">Complete Your Payment</h3>
-                                <p className="text-gray-400 text-sm">Pay {currentOrder.paymentAmount} {currentOrder.paymentCurrency} to receive {currentOrder.tokenAmount} {currentOrder.tokenSymbol}</p>
-                            </div>
-
-                            {/* Order Status */}
-                            <div className="bg-[#0B0E11] rounded-xl p-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-gray-500 text-sm">Status</span>
-                                    <span className={`font-bold ${getStatusColor(currentOrder.status)}`}>
-                                        {currentOrder.status === 'PENDING' && <span className="flex items-center space-x-1"><MdRefresh className="animate-spin" /><span>Waiting for payment</span></span>}
-                                        {currentOrder.status === 'PAID' && <span className="flex items-center space-x-1"><MdRefresh className="animate-spin" /><span>Processing tokens</span></span>}
-                                        {currentOrder.status === 'TOKENS_SENT' && <span className="flex items-center space-x-1"><MdCheckCircle /><span>Complete!</span></span>}
-                                        {currentOrder.status === 'FAILED' && <span className="flex items-center space-x-1"><MdError /><span>Failed</span></span>}
-                                    </span>
-                                </div>
-                                <div className="text-xs text-gray-500">Order ID: {currentOrder.orderId}</div>
-                            </div>
-
-                            {/* QR Code */}
-                            {currentOrder.qrContent && currentOrder.status === 'PENDING' && (
-                                <div className="bg-white p-6 rounded-2xl w-fit mx-auto">
-                                    <img
-                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(currentOrder.qrContent)}`}
-                                        alt="Binance Pay QR"
-                                        className="w-48 h-48"
-                                    />
-                                </div>
-                            )}
-
-                            {/* Copy Link */}
-                            {currentOrder.paymentUrl && currentOrder.status === 'PENDING' && (
+                            {!showLoginForm ? (
                                 <>
-                                    <div className="bg-[#0B0E11] rounded-xl p-4 flex items-center justify-between">
-                                        <span className="text-xs text-gray-400 font-mono truncate max-w-[200px]">
-                                            {currentOrder.paymentUrl.substring(0, 40)}...
-                                        </span>
-                                        <button
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(currentOrder.paymentUrl);
-                                                Swal.fire({
-                                                    toast: true,
-                                                    position: 'top',
-                                                    icon: 'success',
-                                                    title: 'Copied!',
-                                                    showConfirmButton: false,
-                                                    timer: 1500,
-                                                    background: '#1E2329',
-                                                    color: '#ffffff'
-                                                });
-                                            }}
-                                            className="text-[#fcd436] hover:text-white transition-colors"
-                                        >
-                                            <MdContentCopy />
-                                        </button>
+                                    <div className="text-center mb-6">
+                                        <h2 className="text-2xl font-bold text-white mb-2">Connect VetaWallet</h2>
+                                        <p className="text-gray-400 text-sm">Choose your preferred connection method</p>
                                     </div>
 
-                                    <a
-                                        href={currentOrder.paymentUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="block w-full bg-[#fcd436] text-black font-bold py-4 rounded-2xl hover:bg-opacity-90 transition-all text-center"
-                                    >
-                                        Open in Binance Pay
-                                    </a>
+                                    <div className="space-y-3">
+                                        <button className="w-full bg-[#0B0E11] border border-gray-700 py-3 rounded-xl font-semibold hover:border-gray-600 transition-all flex items-center justify-center space-x-2">
+                                            <span className="text-red-500 font-bold">G</span>
+                                            <span>Continue with Google</span>
+                                        </button>
+
+                                        <button
+                                            className="w-full bg-[#fcd436] text-black py-3 rounded-xl font-bold hover:bg-opacity-90 transition-all"
+                                            onClick={() => setShowLoginForm(true)}
+                                        >
+                                            Continue with VetaWallet
+                                        </button>
+                                    </div>
                                 </>
-                            )}
+                            ) : (
+                                <>
+                                    <div className="text-center mb-6">
+                                        <h2 className="text-2xl font-bold text-white mb-2">Log In</h2>
+                                        <p className="text-gray-400 text-sm">Welcome back to VetaWallet</p>
+                                    </div>
 
-                            {/* Transaction Hash */}
-                            {currentOrder.txHash && (
-                                <a
-                                    href={`https://polygonscan.com/tx/${currentOrder.txHash}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-[#fcd436] hover:underline"
-                                >
-                                    View Transaction on Explorer →
-                                </a>
-                            )}
+                                    <form onSubmit={handleSubmit(submitHandler)} className="space-y-4">
+                                        <div>
+                                            <input
+                                                type="email"
+                                                placeholder="Email"
+                                                className="w-full bg-[#0B0E11] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-[#fcd436] outline-none transition-all"
+                                                {...register("email", {
+                                                    required: "Required",
+                                                    pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i, message: "Invalid email" },
+                                                })}
+                                            />
+                                            {errors.email && <span className="text-red-500 text-xs mt-1">{errors.email.message as string}</span>}
+                                        </div>
 
-                            {/* Cancel Button */}
-                            {currentOrder.status === 'PENDING' && (
-                                <button
-                                    onClick={async () => {
-                                        const result = await Swal.fire({
-                                            title: 'Cancel Payment?',
-                                            text: "Are you sure you want to cancel this order?",
-                                            icon: 'warning',
-                                            showCancelButton: true,
-                                            confirmButtonColor: '#fcd436',
-                                            cancelButtonColor: '#1E2329',
-                                            confirmButtonText: 'Yes, cancel it',
-                                            cancelButtonText: 'No, keep waiting',
-                                            background: '#1E2329',
-                                            color: '#ffffff'
-                                        });
+                                        <div className="relative">
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                placeholder="Password"
+                                                className="w-full bg-[#0B0E11] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-[#fcd436] outline-none transition-all pr-12"
+                                                {...register("password", { required: "Required" })}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={togglePasswordVisibility}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                                            >
+                                                {showPassword ? <FaRegEyeSlash size={20} /> : <FaRegEye size={20} />}
+                                            </button>
+                                        </div>
 
-                                        if (result.isConfirmed) {
-                                            clearOrderPersistence();
-                                        }
-                                    }}
-                                    className="block w-full mt-4 text-gray-500 hover:text-red-500 text-sm font-medium transition-colors"
-                                >
-                                    Cancel Payment
-                                </button>
+                                        <button
+                                            type="submit"
+                                            className="w-full bg-[#fcd436] text-black font-bold py-3 rounded-xl hover:bg-opacity-90 transition-all"
+                                        >
+                                            Login
+                                        </button>
+                                    </form>
+
+                                    <div className="text-sm text-gray-400 mt-4 text-center">
+                                        New to VetaWallet?{' '}
+                                        <a href="https://www.vetawallet.com/register" className="text-[#fcd436] hover:underline font-semibold" target="_blank" rel="noopener noreferrer">
+                                            Register
+                                        </a>
+                                    </div>
+                                </>
                             )}
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-        </div>
+            {/* Binance Pay Modal */}
+            {
+                showPaymentModal && currentOrder && (
+                    <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4">
+                        <div className="bg-[#1E2329] rounded-[32px] w-full max-w-md p-8 border border-gray-800 relative">
+                            <button
+                                onClick={() => { setShowPaymentModal(false); setOrderPolling(false); }}
+                                className="absolute top-4 right-4 text-gray-400 hover:text-white"
+                            >
+                                <MdClose size={24} />
+                            </button>
+
+                            <div className="text-center space-y-6">
+                                <div className="bg-[#fcd436]/20 p-4 rounded-full w-fit mx-auto">
+                                    <MdPayments className="text-[#fcd436] text-4xl" />
+                                </div>
+
+                                <div>
+                                    <h3 className="text-2xl font-bold text-white mb-2">Complete Your Payment</h3>
+                                    <p className="text-gray-400 text-sm">Pay {currentOrder.paymentAmount} {currentOrder.paymentCurrency} to receive {currentOrder.tokenAmount} {currentOrder.tokenSymbol}</p>
+                                </div>
+
+                                {/* Order Status */}
+                                <div className="bg-[#0B0E11] rounded-xl p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-gray-500 text-sm">Status</span>
+                                        <span className={`font-bold ${getStatusColor(currentOrder.status)}`}>
+                                            {currentOrder.status === 'PENDING' && <span className="flex items-center space-x-1"><MdRefresh className="animate-spin" /><span>Waiting for payment</span></span>}
+                                            {currentOrder.status === 'PAID' && <span className="flex items-center space-x-1"><MdRefresh className="animate-spin" /><span>Processing tokens</span></span>}
+                                            {currentOrder.status === 'TOKENS_SENT' && <span className="flex items-center space-x-1"><MdCheckCircle /><span>Complete!</span></span>}
+                                            {currentOrder.status === 'FAILED' && <span className="flex items-center space-x-1"><MdError /><span>Failed</span></span>}
+                                        </span>
+                                    </div>
+                                    <div className="text-xs text-gray-500">Order ID: {currentOrder.orderId}</div>
+                                </div>
+
+                                {/* QR Code */}
+                                {currentOrder.qrContent && currentOrder.status === 'PENDING' && (
+                                    <div className="bg-white p-6 rounded-2xl w-fit mx-auto">
+                                        <img
+                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(currentOrder.qrContent)}`}
+                                            alt="Binance Pay QR"
+                                            className="w-48 h-48"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Copy Link */}
+                                {currentOrder.paymentUrl && currentOrder.status === 'PENDING' && (
+                                    <>
+                                        <div className="bg-[#0B0E11] rounded-xl p-4 flex items-center justify-between">
+                                            <span className="text-xs text-gray-400 font-mono truncate max-w-[200px]">
+                                                {currentOrder.paymentUrl.substring(0, 40)}...
+                                            </span>
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(currentOrder.paymentUrl);
+                                                    Swal.fire({
+                                                        toast: true,
+                                                        position: 'top',
+                                                        icon: 'success',
+                                                        title: 'Copied!',
+                                                        showConfirmButton: false,
+                                                        timer: 1500,
+                                                        background: '#1E2329',
+                                                        color: '#ffffff'
+                                                    });
+                                                }}
+                                                className="text-[#fcd436] hover:text-white transition-colors"
+                                            >
+                                                <MdContentCopy />
+                                            </button>
+                                        </div>
+
+                                        <a
+                                            href={currentOrder.paymentUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block w-full bg-[#fcd436] text-black font-bold py-4 rounded-2xl hover:bg-opacity-90 transition-all text-center"
+                                        >
+                                            Open in Binance Pay
+                                        </a>
+                                    </>
+                                )}
+
+                                {/* Transaction Hash */}
+                                {currentOrder.txHash && (
+                                    <a
+                                        href={`https://polygonscan.com/tx/${currentOrder.txHash}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm text-[#fcd436] hover:underline"
+                                    >
+                                        View Transaction on Explorer →
+                                    </a>
+                                )}
+
+                                {/* Cancel Button */}
+                                {currentOrder.status === 'PENDING' && (
+                                    <button
+                                        onClick={async () => {
+                                            const result = await Swal.fire({
+                                                title: 'Cancel Payment?',
+                                                text: "Are you sure you want to cancel this order?",
+                                                icon: 'warning',
+                                                showCancelButton: true,
+                                                confirmButtonColor: '#fcd436',
+                                                cancelButtonColor: '#1E2329',
+                                                confirmButtonText: 'Yes, cancel it',
+                                                cancelButtonText: 'No, keep waiting',
+                                                background: '#1E2329',
+                                                color: '#ffffff'
+                                            });
+
+                                            if (result.isConfirmed) {
+                                                clearOrderPersistence();
+                                            }
+                                        }}
+                                        className="block w-full mt-4 text-gray-500 hover:text-red-500 text-sm font-medium transition-colors"
+                                    >
+                                        Cancel Payment
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+        </div >
     );
 };
 
