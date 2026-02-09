@@ -1,11 +1,12 @@
 /* eslint-disable class-methods-use-this */
 import axios from 'axios';
+import { API_BASE_URL } from '../../config/api';
 
 class RequestService {
   constructor() {
     /* */
     this.version = 'tokens';
-    this.urlServer = `${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://ico-back-0f689793b1b5.herokuapp.com'}/txs`;
+    this.urlServer = `${API_BASE_URL}/txs`;
   }
 
   async post(data) {
@@ -73,16 +74,7 @@ class RequestService {
       return this.switchCase(error.request);
     }
   }
-  async updatePriceHistory(address, data) {
-    try {
-      const resp = await axios.put(`${this.urlServer}${this.version}/${address}/price`, data, {
 
-      });
-      return this.switchCase(resp);
-    } catch (error) {
-      return this.switchCase(error.request);
-    }
-  }
   async delete(url) {
     try {
       const resp = await axios.delete(`${this.urlServer}${this.version}${url}`, {});
@@ -134,3 +126,4 @@ class RequestService {
   }
 }
 export default new RequestService();
+

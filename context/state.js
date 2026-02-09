@@ -126,98 +126,53 @@ export function AppWrapper({ children }) {
 
 
 
-  const transferAUKA = async (data) => {
-    const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data
+  // --- GENERIC TRANSACTION METHODS ---
+
+  const getTokenAddress = (symbol) => {
+    switch (symbol) {
+      case 'AUKA': return AUKA_ADDRESS;
+      case 'USDK': return USDK_ADDRESS;
+      default: return null;
+    }
+  };
+
+  const buyToken = async (data) => {
+    const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data;
+
+    // Always switch to the network where USDT exists (Polygon 137) for buying
     if (networkId) await switchNetwork(networkId);
+
     if (isNaN(usdtAmount) || isNaN(tokenAmount)) {
       console.error("Invalid input: usdtAmount or tokenAmount is not a number");
       return;
     }
 
-    let weiUSDTValue = (usdtAmount * 10 ** 6);
-    let weiAUKAValue = (tokenAmount * 10 ** 18);
-
-    // console.log("USDT Value (in wei):", weiUSDTValue);
-    // console.log("Token Value (in wei):", weiAUKAValue);
+    let weiUSDTValue = (Number(usdtAmount) * 10 ** 6).toString();
+    // Assuming all tokens (AUKA, ORIGEN, USDK) have 18 decimals
+    let weiTokenValue = (Number(tokenAmount) * 10 ** 18).toString();
 
     let ERC20_ABI = require("@config/abi/erc20.json");
     let provider = await detectEthereumProvider();
-    if (provider) {
-      const web3Provider = new Web3(window.ethereum);
-      let USDCContract = new web3Provider.eth.Contract(
-        ERC20_ABI,
-        usdtAddress
-      );
-      const resultApprove = await USDCContract.methods
-        .transfer(USDT_RECEIVER_ADDRESS, weiUSDTValue)
-        .send({ from: walletAddress[0], value: 0, type: '0x0' })
-        .on("transactionHash", function (hash) {
-          console.log("Executing...");
-          setTxPending(true);
-          setTxHash(hash);
-        })
-        .on("receipt", function (receipt) {
-          console.log(receipt);
-          RequestService.post({
-            providerUrl,
-            network,
-            "networkId": String(networkId),
-            "buyerAddress": receipt.from,
-            "tokenName": tokenName,
-            "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
-            "tokenReceiverAddress": tokenReceiverAddress,
-            "txHash": receipt.transactionHash,
-            "usdtAddress": usdtAddress,
-            "usdtAmount": String(usdtAmount),
-            "tokenAmount": String(tokenAmount),
-            "weiUSDTValue": String(weiUSDTValue),
-            "weiTokenValue": String(weiAUKAValue),
-            "approved": true
-          })
-          Swal.fire({
-            title: `${tokenAmount} $AUKA sent to`,
-            text: tokenReceiverAddress,
-            icon: "success",
-            background: '#1E2329',
-            color: '#ffffff',
-            confirmButtonColor: '#fcd436'
-          });
-          getAUKABalance();
-          setTxPending(false);
-        })
-        .catch((revertReason) => {
-          console.log(
-            "ERROR! Transaction reverted: " +
-            revertReason.receipt
-          );
-          setTxPending(false);
-        });
-    }
-  }
-  const buyORIGEN = async (data) => {
-    const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data
-    if (networkId) await switchNetwork(networkId);
-    let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
-    let weiORIGENValue = (tokenAmount * 10 ** 18).toString()
-    console.log(usdtAddress, walletAddress[0], USDT_RECEIVER_ADDRESS)
-    let ERC20_ABI = require("@config/abi/erc20.json");
-    let provider = await detectEthereumProvider();
+
     if (provider) {
       const web3Provider = new Web3(window.ethereum);
       let USDTContract = new web3Provider.eth.Contract(
         ERC20_ABI,
         usdtAddress
       );
-      const resultApprove = await USDTContract.methods
+
+      // Sending USDT to Treasury
+      USDTContract.methods
         .transfer(USDT_RECEIVER_ADDRESS, weiUSDTValue)
         .send({ from: walletAddress[0], type: '0x0' })
         .on("transactionHash", function (hash) {
-          console.log("Executing...");
+          console.log("Executing Buy...");
           setTxPending(true);
           setTxHash(hash);
         })
         .on("receipt", function (receipt) {
-          console.log(receipt);
+          console.log("Buy Receipt:", receipt);
+
           RequestService.post({
             providerUrl,
             network,
@@ -231,18 +186,22 @@ export function AppWrapper({ children }) {
             "usdtAmount": String(usdtAmount),
             "tokenAmount": String(tokenAmount),
             "weiUSDTValue": String(weiUSDTValue),
-            "weiTokenValue": String(weiORIGENValue),
+            "weiTokenValue": String(weiTokenValue),
             "approved": true
-          })
+          });
+
           Swal.fire({
-            title: `${tokenAmount} $ORIGEN sent`,
+            title: `${tokenAmount} $${tokenName} purchase initiated`,
             text: 'Verify your wallet on the OG Network. Tokens may take a few seconds to appear.',
             icon: "success",
             background: '#1E2329',
             color: '#ffffff',
             confirmButtonColor: '#fcd436'
           });
+
           setTxPending(false);
+          // Refresh balances
+          getAUKABalance();
         })
         .catch((revertReason) => {
           console.error("ERROR! Transaction reverted: ", revertReason);
@@ -257,339 +216,120 @@ export function AppWrapper({ children }) {
           setTxPending(false);
         });
     }
-  }
+  };
 
-  const transferUSDTfromAUKA = async (data) => {
-    await switchNetwork('0x2154'); // Keep forcing OG for Selling AUKA
-    const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data
-    let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
-    let weiAUKAValue = (tokenAmount * 10 ** 18).toString()
-    // console.log(weiAUKAValue)
+  const sellToken = async (data) => {
+    const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data;
+
+    // Always switch to Orden Global (8532) for selling (sending tokens back to Treasury)
+    // Note: If selling AUKA spans Polygon, logic might differ.
+    // Based on legacy code 'transferUSDTfromAUKA' (selling AUKA), it switched to '0x2154' (Orden Global).
+    // So all sells happen on Orden Global network.
+    await switchNetwork('0x2154');
+
+    let weiUSDTValue = (Number(usdtAmount) * 10 ** 6).toString();
+    let weiTokenValue = (Number(tokenAmount) * 10 ** 18).toString();
+
     let ERC20_ABI = require("@config/abi/erc20.json");
     let provider = await detectEthereumProvider();
+
     if (provider) {
       const web3Provider = new Web3(window.ethereum);
-      let USDCContract = new web3Provider.eth.Contract(
-        ERC20_ABI,
-        AUKA_ADDRESS
-      );
-      const resultApprove = await USDCContract.methods
-        .transfer(TOKEN_RECEIVER_ADDRESS, weiAUKAValue)
-        .send({ from: walletAddress[0], gas: 200000, value: 0, gasLimit: 21000 })
-        .on("transactionHash", function (hash) {
-          console.log("Executing...");
-          setTxPending(true);
-          setTxHash(hash);
-        })
-        .on("receipt", function (receipt) {
 
-          RequestService.postSell({
-            providerUrl,
-            network,
-            "networkId": String(networkId),
-            "buyerAddress": receipt.from,
-            "tokenName": tokenName,
-            "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
-            "tokenReceiverAddress": tokenReceiverAddress,
-            "txHash": receipt.transactionHash,
-            "usdtAddress": usdtAddress,
-            "usdtAmount": String(usdtAmount),
-            "tokenAmount": String(tokenAmount),
-            "weiUSDTValue": String(weiUSDTValue),
-            "weiTokenValue": String(weiAUKAValue),
-            "approved": true
-          })
+      const onReceipt = (receipt) => {
+        setTxReceipt(receipt);
+        console.log('Sell Receipt:', receipt);
+
+        RequestService.postSell({
+          providerUrl,
+          network,
+          "networkId": String(networkId),
+          "buyerAddress": receipt.from,
+          "tokenName": tokenName,
+          "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
+          "tokenReceiverAddress": tokenReceiverAddress, // Address to receive USDT
+          "txHash": receipt.transactionHash,
+          "usdtAddress": usdtAddress,
+          "usdtAmount": String(usdtAmount),
+          "tokenAmount": String(tokenAmount),
+          "weiUSDTValue": String(weiUSDTValue),
+          "weiTokenValue": String(weiTokenValue),
+          "approved": true
+        }).then(response => {
+          console.log('PostSell Response:', response);
           Swal.fire({
-            title: `${tokenAmount} $AUKA sent to`,
+            title: `$${usdtAmount} USDT sent to`,
             text: tokenReceiverAddress,
             icon: "success",
             background: '#1E2329',
             color: '#ffffff',
             confirmButtonColor: '#fcd436'
           });
-          getAUKABalance();
           setTxPending(false);
-        })
-        .catch((revertReason) => {
-          console.log(
-            "ERROR! Transaction reverted: " +
-            revertReason.receipt
-          );
+        }).catch(error => {
+          console.error('PostSell Error:', error);
           setTxPending(false);
         });
-    }
-  }
-
-  const [txReceipt, setTxReceipt] = useState('')
-  const sellOrigen = async (data) => {
-    const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data;
-    let weiUSDTValue = (usdtAmount * 10 ** 6).toString();
-    let weiORIGENValue = (tokenAmount * 10 ** 18).toString();
-
-    let ERC20_ABI = require("@config/abi/erc20.json");
-    let provider = await detectEthereumProvider();
-
-    if (provider) {
-      const web3Provider = new Web3(window.ethereum);
-
-      const transactionParameters = {
-        to: TOKEN_RECEIVER_ADDRESS, // Dirección del receptor
-        from: walletAddress[0], // Dirección del remitente
-        value: weiORIGENValue, // Valor en wei
       };
 
-      console.log("transactionParameters:", transactionParameters);
+      const updateTxStatus = (hash) => {
+        console.log("Executing Sell...");
+        setTxPending(true);
+        setTxHash(hash);
+      };
+
+      const handleError = (error) => {
+        console.error("Transaction error:", error);
+        Swal.fire({
+          title: "Transaction Failed",
+          text: error.message || "An error occurred.",
+          icon: "error",
+          background: '#1E2329',
+          color: '#ffffff',
+          confirmButtonColor: '#fcd436'
+        });
+        setTxPending(false);
+      };
 
       try {
-        let tx = await web3Provider.eth.sendTransaction(transactionParameters)
-          .on("transactionHash", function (hash) {
-            console.log("Executing...");
-            console.log("Transaction hash:", hash);
-            setTxPending(true);
-            setTxHash(hash);
-          })
-          .on("receipt", function (receipt) {
-            setTxReceipt(receipt);
-            // Agregar console.log antes de la llamada a postSell
-            console.log('Datos para postSell:', {
-              providerUrl,
-              network,
-              networkId: String(networkId),
-              buyerAddress: receipt.from,
-              tokenName: tokenName,
-              usdtReceiverAddress: TOKEN_RECEIVER_ADDRESS,
-              tokenReceiverAddress: tokenReceiverAddress,
-              txHash: receipt.transactionHash,
-              usdtAddress: usdtAddress,
-              usdtAmount: String(usdtAmount),
-              tokenAmount: String(tokenAmount),
-              weiUSDTValue: String(weiUSDTValue),
-              weiTokenValue: String(weiORIGENValue),
-              approved: true
-            });
+        if (tokenName === 'ORIGEN') {
+          // Native Token Transfer
+          const transactionParameters = {
+            to: TOKEN_RECEIVER_ADDRESS,
+            from: walletAddress[0],
+            value: weiTokenValue,
+          };
 
-            RequestService.postSell({
-              providerUrl,
-              network,
-              networkId: String(networkId),
-              buyerAddress: receipt.from,
-              tokenName: tokenName,
-              usdtReceiverAddress: TOKEN_RECEIVER_ADDRESS,
-              tokenReceiverAddress: tokenReceiverAddress,
-              txHash: receipt.transactionHash,
-              usdtAddress: usdtAddress,
-              usdtAmount: String(usdtAmount),
-              tokenAmount: String(tokenAmount),
-              weiUSDTValue: String(weiUSDTValue),
-              weiTokenValue: String(weiORIGENValue),
-              approved: true
-            }).then(response => {
-              // Agregar console.log después de la respuesta de postSell
-              console.log('Respuesta de postSell:', response);
+          await web3Provider.eth.sendTransaction(transactionParameters)
+            .on("transactionHash", updateTxStatus)
+            .on("receipt", onReceipt)
+            .on("error", handleError);
 
-              Swal.fire({
-                title: `$${usdtAmount} USDT sent to`,
-                text: tokenReceiverAddress,
-                icon: "success",
-                background: '#1E2329',
-                color: '#ffffff',
-                confirmButtonColor: '#fcd436'
-              });
-              setTxPending(false);
-            }).catch(error => {
-              // Capturar cualquier error en postSell
-              console.error('Error en postSell:', error);
-            });
+        } else {
+          // ERC20 Token Transfer (AUKA, USDK)
+          const tokenAddr = getTokenAddress(tokenName);
+          if (!tokenAddr) {
+            throw new Error(`Address for token ${tokenName} not found`);
+          }
 
+          let TokenContract = new web3Provider.eth.Contract(ERC20_ABI, tokenAddr);
 
-          })
-          .on("error", function (error) {
-            console.error("Transaction error:", error);
-            setTxPending(false);
-          });
+          TokenContract.methods
+            .transfer(TOKEN_RECEIVER_ADDRESS, weiTokenValue)
+            .send({ from: walletAddress[0] }) // Let MetaMask estimate gas
+            .on("transactionHash", updateTxStatus)
+            .on("receipt", onReceipt)
+            .on("error", handleError); // Catch contract errors
+        }
       } catch (error) {
-        console.error("Transaction failed:", error);
+        handleError(error);
       }
     } else {
       console.error("No Ethereum provider detected");
     }
   };
 
-  const buyUSDK = async (data) => {
-    const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data
-    if (networkId) await switchNetwork(networkId);
-    let weiUSDTValue = (usdtAmount * 10 ** 6).toString()
-    let weiUSDKValue = (tokenAmount * 10 ** 18).toString() // USDK usa 18 decimales
-    console.log(usdtAddress, walletAddress[0], USDT_RECEIVER_ADDRESS)
-    let ERC20_ABI = require("@config/abi/erc20.json");
-    let provider = await detectEthereumProvider();
-    if (provider) {
-      const web3Provider = new Web3(window.ethereum);
-      let USDTContract = new web3Provider.eth.Contract(
-        ERC20_ABI,
-        usdtAddress
-      );
-      const resultApprove = await USDTContract.methods
-        .transfer(USDT_RECEIVER_ADDRESS, weiUSDTValue)
-        .send({ from: walletAddress[0] })
-        .on("transactionHash", function (hash) {
-          console.log("Executing...");
-          setTxPending(true);
-          setTxHash(hash);
-        })
-        .on("receipt", function (receipt) {
-          console.log(receipt);
-          RequestService.post({
-            providerUrl,
-            network,
-            "networkId": String(networkId),
-            "buyerAddress": receipt.from,
-            "tokenName": tokenName, // Será "USDK"
-            "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
-            "tokenReceiverAddress": tokenReceiverAddress,
-            "txHash": receipt.transactionHash,
-            "usdtAddress": usdtAddress,
-            "usdtAmount": String(usdtAmount),
-            "tokenAmount": String(tokenAmount),
-            "weiUSDTValue": String(weiUSDTValue),
-            "weiTokenValue": String(weiUSDKValue), // Valor en Wei de USDK
-            "approved": true
-          })
-          Swal.fire({
-            title: `${tokenAmount} $USDK sent`,
-            text: 'Verify your wallet on the OG Network. Tokens may take a few seconds to appear.',
-            icon: "success",
-            background: '#1E2329',
-            color: '#ffffff',
-            confirmButtonColor: '#fcd436'
-          });
-          setTxPending(false);
-        })
-        .catch((revertReason) => {
-          console.error("ERROR! Transaction reverted: ", revertReason);
-          Swal.fire({
-            title: "Transaction Failed",
-            text: "The transaction was rejected or an error occurred. Please try again.",
-            icon: "error",
-            background: '#1E2329',
-            color: '#ffffff',
-            confirmButtonColor: '#fcd436'
-          });
-          setTxPending(false);
-        });
-    }
-  }
-  const sellUSDK = async (data) => {
-    await switchNetwork('0x2154'); // Keep forcing OG for Selling USDK
-    const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data;
-    let weiUSDTValue = (usdtAmount * 10 ** 6).toString();
-    let weiUSDKValue = (tokenAmount * 10 ** 18).toString(); // USDK 18 decimales
-
-    let ERC20_ABI = require("@config/abi/erc20.json");
-    let provider = await detectEthereumProvider();
-    if (provider) {
-      const web3Provider = new Web3(window.ethereum);
-      // --- MODIFICACIÓN: Usar Contrato USDK ---
-      let USDKContract = new web3Provider.eth.Contract(
-        ERC20_ABI,
-        USDK_ADDRESS // Usar la nueva dirección
-      );
-      const resultApprove = await USDKContract.methods
-        .transfer(TOKEN_RECEIVER_ADDRESS, weiUSDKValue) // Enviar weiUSDKValue
-        .send({ from: walletAddress[0] }) // Dejar que MetaMask estime el gas
-        .on("transactionHash", function (hash) {
-          console.log("Executing...");
-          setTxPending(true);
-          setTxHash(hash);
-        })
-        .on("receipt", function (receipt) {
-
-          RequestService.postSell({
-            providerUrl,
-            network,
-            "networkId": String(networkId),
-            "buyerAddress": receipt.from,
-            "tokenName": tokenName, // Será "USDK"
-            "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
-            "tokenReceiverAddress": tokenReceiverAddress,
-            "txHash": receipt.transactionHash,
-            "usdtAddress": usdtAddress,
-            "usdtAmount": String(usdtAmount),
-            "tokenAmount": String(tokenAmount),
-            "weiUSDTValue": String(weiUSDTValue),
-            "weiTokenValue": String(weiUSDKValue), // Valor en Wei de USDK
-            "approved": true
-          });
-          Swal.fire({
-            title: `${tokenAmount} $USDK sent to`,
-            text: tokenReceiverAddress,
-            icon: "success",
-            background: '#1E2329',
-            color: '#ffffff',
-            confirmButtonColor: '#fcd436'
-          });
-          setTxPending(false);
-        })
-        .catch((revertReason) => {
-          console.log(
-            "ERROR! Transaction reverted: " +
-            revertReason.receipt
-          );
-          setTxPending(false);
-        });
-    }
-  }
-
-  useEffect(() => {
-
-    //  // Agregar console.log antes de la llamada a postSell
-    //  console.log('Datos para postSell:', {
-    //   providerUrl,
-    //   network,
-    //   networkId: String(networkId),
-    //   buyerAddress: receipt.from,
-    //   tokenName: tokenName,
-    //   usdtReceiverAddress: TOKEN_RECEIVER_ADDRESS,
-    //   tokenReceiverAddress: tokenReceiverAddress,
-    //   txHash: receipt.transactionHash,
-    //   usdtAddress: USDT_ADDRESS,
-    //   usdtAmount: String(usdtAmount),
-    //   tokenAmount: String(tokenAmount),
-    //   weiUSDTValue: String(weiUSDTValue),
-    //   weiTokenValue: String(weiORIGENValue),
-    //   approved: true
-    // });
-
-    // RequestService.postSell({
-    //   providerUrl,
-    //   network,
-    //   networkId: String(networkId),
-    //   buyerAddress: receipt.from,
-    //   tokenName: tokenName,
-    //   usdtReceiverAddress: TOKEN_RECEIVER_ADDRESS,
-    //   tokenReceiverAddress: tokenReceiverAddress,
-    //   txHash: receipt.transactionHash,
-    //   usdtAddress: USDT_ADDRESS,
-    //   usdtAmount: String(usdtAmount),
-    //   tokenAmount: String(tokenAmount),
-    //   weiUSDTValue: String(weiUSDTValue),
-    //   weiTokenValue: String(weiORIGENValue),
-    //   approved: true
-    // }).then(response => {
-    //   // Agregar console.log después de la respuesta de postSell
-    //   console.log('Respuesta de postSell:', response);
-
-    //   Swal.fire({
-    //     title: `${tokenAmount} $ORIGEN sent to`,
-    //     text: tokenReceiverAddress,
-    //     icon: "success"
-    //   });
-    // }).catch(error => {
-    //   // Capturar cualquier error en postSell
-    //   console.error('Error en postSell:', error);
-    // });
-
-  }, [txReceipt]);
+  // ... useEffect for txReceipt if needed, but we handled it in callback ...
 
   let sharedState = {
     connectWallet,
@@ -600,17 +340,14 @@ export function AppWrapper({ children }) {
     ondkBalance,
     coffeeContract,
     web3,
-    transferAUKA,
-    buyORIGEN,
+    buyToken, // Generic Buy
+    sellToken, // Generic Sell
     network,
-    transferUSDTfromAUKA,
-    sellOrigen, aukaWalletBalance, origenWalletBalance, usdtWalletBalance,
+    aukaWalletBalance, origenWalletBalance, usdtWalletBalance,
     OGbalanceORIGEN,
     OGUSDTBalance,
     usdkWalletBalance,
     OGbalanceUSDK,
-    buyUSDK,
-    sellUSDK,
     txPending,
     txHash,
     switchNetwork

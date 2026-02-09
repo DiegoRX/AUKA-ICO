@@ -1,5 +1,7 @@
 /* eslint-disable no-dupe-keys */
-const API = "http://localhost:5000";
+import { API_BASE_URL } from "../../config/api";
+const API = API_BASE_URL;
+
 
 const endPoints = {
   users: {
@@ -25,10 +27,10 @@ const endPoints = {
     getTransfers: `${API}/transfers`,
     addTransfer: `${API}/transfers`,
   },
-  complains:{
-    getComplains:`${API}/complains`,
-    addComplain:`${API}/complains`,
-    updateComplain:(complainId) => `${API}/complains/${complainId}`,
+  complains: {
+    getComplains: `${API}/complains`,
+    addComplain: `${API}/complains`,
+    updateComplain: (complainId) => `${API}/complains/${complainId}`,
   }
 };
 

@@ -27,7 +27,8 @@ import {
 import { useAppContext } from "@context/state";
 
 // Backend API URL - usar variable de entorno o fallback
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://vetawallet-1a2e38ac52b1.herokuapp.com';
+import { API_BASE_URL } from "@config/api";
+
 
 // Tokens disponibles para compra
 const AVAILABLE_TOKENS = [
@@ -57,7 +58,7 @@ const Home = () => {
     // Amounts
     const [tokenAmount, setTokenAmount] = useState('0');
     const [usdtAmount, setUsdtAmount] = useState('0');
-    const [exchangeRate, setExchangeRate] = useState('0.5');
+    const [exchangeRate, setExchangeRate] = useState('0');
     const [goldPrice, setGoldPrice] = useState<any>(null);
     const [quoteLoading, setQuoteLoading] = useState(false);
 
@@ -82,12 +83,8 @@ const Home = () => {
     const {
         connectWallet,
         walletAddress,
-        buyORIGEN,
-        sellOrigen,
-        transferAUKA,
-        transferUSDTfromAUKA,
-        buyUSDK,
-        sellUSDK,
+        buyToken,
+        sellToken,
         aukaWalletBalance,
         origenWalletBalance,
         usdtWalletBalance,
@@ -349,30 +346,9 @@ const Home = () => {
         };
 
         if (mode === 'buy') {
-            switch (selectedToken.symbol) {
-                case 'ORIGEN':
-                    await buyORIGEN(txData);
-                    break;
-                case 'AUKA':
-                    await transferAUKA(txData);
-                    break;
-                case 'USDK':
-                    await buyUSDK(txData);
-                    break;
-            }
+            await buyToken(txData);
         } else {
-            // Sell mode
-            switch (selectedToken.symbol) {
-                case 'ORIGEN':
-                    await sellOrigen(txData);
-                    break;
-                case 'AUKA':
-                    await transferUSDTfromAUKA(txData);
-                    break;
-                case 'USDK':
-                    await sellUSDK(txData);
-                    break;
-            }
+            await sellToken(txData);
         }
     };
 
