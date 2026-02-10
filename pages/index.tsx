@@ -937,7 +937,7 @@ const Home = () => {
                             <div className="group">
                                 <div className="flex justify-between items-center mb-1 ml-1">
                                     <label className="text-xs font-medium text-gray-500 flex items-center">
-                                        {mode === 'buy' ? 'You Buy' : 'You Receive'} <MdInfoOutline className="text-[14px] ml-1 opacity-60" />
+                                        {mode === 'buy' ? 'You Receive' : 'You Pay'} <MdInfoOutline className="text-[14px] ml-1 opacity-60" />
                                     </label>
                                     {paymentMethod === 'metamask' && walletAddress.length > 0 && (
                                         <span className="text-xs text-gray-500 cursor-pointer hover:text-[#fcd436]" onClick={handleSetMax}>
