@@ -984,8 +984,8 @@ const Home = () => {
                                 {paymentMethod === 'metamask' && <MdCheckCircle className="text-[#fcd436] text-xl" />}
                             </div>
 
-                            {/* Binance Pay Option */}
-                            {mode === 'buy' && (
+                            {/* Binance Pay Option (DISABLED) */}
+                            {/* {mode === 'buy' && (
                                 <div
                                     onClick={() => setPaymentMethod('binance')}
                                     className={`bg-[#0B0E11] rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all duration-300 ${paymentMethod === 'binance' ? 'ring-2 ring-[#fcd436] shadow-[0_0_15px_rgba(252,212,54,0.1)]' : 'hover:bg-gray-800/50'}`}
@@ -1016,7 +1016,7 @@ const Home = () => {
                                         </div>
                                     )}
                                 </div>
-                            )}
+                            )} */}
                         </div>
 
 
@@ -1133,8 +1133,8 @@ const Home = () => {
                 )
             }
 
-            {/* Binance Pay Modal */}
-            {
+            {/* Binance Pay Modal (DISABLED) */}
+            {/* {
                 showPaymentModal && currentOrder && (
                     <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4">
                         <div className="bg-[#1E2329] rounded-[32px] w-full max-w-md p-8 border border-gray-800 relative">
@@ -1155,7 +1155,6 @@ const Home = () => {
                                     <p className="text-gray-400 text-sm">Pay {currentOrder.paymentAmount} {currentOrder.paymentCurrency} to receive {currentOrder.tokenAmount} {currentOrder.tokenSymbol}</p>
                                 </div>
 
-                                {/* Order Status */}
                                 <div className="bg-[#0B0E11] rounded-xl p-4">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-gray-500 text-sm">Status</span>
@@ -1169,7 +1168,6 @@ const Home = () => {
                                     <div className="text-xs text-gray-500">Order ID: {currentOrder.orderId}</div>
                                 </div>
 
-                                {/* QR Code */}
                                 {currentOrder.qrContent && currentOrder.status === 'PENDING' && (
                                     <div className="bg-white p-6 rounded-2xl w-fit mx-auto">
                                         <img
@@ -1180,7 +1178,6 @@ const Home = () => {
                                     </div>
                                 )}
 
-                                {/* Copy Link */}
                                 {currentOrder.paymentUrl && currentOrder.status === 'PENDING' && (
                                     <>
                                         <div className="bg-[#0B0E11] rounded-xl p-4 flex items-center justify-between">
@@ -1218,7 +1215,6 @@ const Home = () => {
                                     </>
                                 )}
 
-                                {/* Transaction Hash */}
                                 {currentOrder.txHash && (
                                     <a
                                         href={`https://polygonscan.com/tx/${currentOrder.txHash}`}
@@ -1230,7 +1226,6 @@ const Home = () => {
                                     </a>
                                 )}
 
-                                {/* Cancel Button */}
                                 {currentOrder.status === 'PENDING' && (
                                     <button
                                         onClick={async () => {
@@ -1260,7 +1255,7 @@ const Home = () => {
                         </div>
                     </div>
                 )
-            }
+            } */}
 
         </div >
     );
