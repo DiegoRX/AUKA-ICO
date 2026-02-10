@@ -316,13 +316,25 @@ export function AppWrapper({ children }) {
     const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data;
 
     // Always switch to Orden Global (8532) for selling (sending tokens back to Treasury)
-    // Note: If selling AUKA spans Polygon, logic might differ.
-    // Based on legacy code 'transferUSDTfromAUKA' (selling AUKA), it switched to '0x2154' (Orden Global).
-    // So all sells happen on Orden Global network.
-    await switchNetwork('0x2154');
+    try {
+      await switchNetwork('0x2154');
+    } catch (e) {
+      console.error("Failed to switch to Orden Global", e);
+      Swal.fire({
+        title: "Network Switch Failed",
+        text: "Please manually switch to Orden Global network in your wallet.",
+        icon: "error",
+        background: '#1E2329',
+        color: '#ffffff',
+        confirmButtonColor: '#fcd436'
+      });
+      return;
+    }
 
-    let weiUSDTValue = (Number(usdtAmount) * 10 ** 6).toString();
-    let weiTokenValue = (Number(tokenAmount) * 10 ** 18).toString();
+    let web3Temp = new Web3(); // For utils
+    let weiUSDTValue = Math.floor(Number(usdtAmount) * 10 ** 6).toString();
+    // Use toWei for accurate token amount (handles 18 decimals correctly)
+    let weiTokenValue = web3Temp.utils.toWei(String(tokenAmount), 'ether');
 
     let ERC20_ABI = require("@config/abi/erc20.json");
     let provider = await detectEthereumProvider();
@@ -374,9 +386,12 @@ export function AppWrapper({ children }) {
 
       const handleError = (error) => {
         console.error("Transaction error:", error);
+        // Extract inner message if available
+        const msg = error.message || "An error occurred.";
+
         Swal.fire({
           title: "Transaction Failed",
-          text: error.message || "An error occurred.",
+          text: msg.includes('Internal JSON-RPC error') ? 'Network error (RPC). Try increasing gas price manually in MetaMask.' : msg,
           icon: "error",
           background: '#1E2329',
           color: '#ffffff',
@@ -386,7 +401,16 @@ export function AppWrapper({ children }) {
       };
 
       try {
-        const gasPrice = await web3Provider.eth.getGasPrice();
+        // Fetch Gas Price
+        let gasPrice = await web3Provider.eth.getGasPrice();
+        console.log("Fetched Gas Price (wei):", gasPrice);
+
+        // Ensure gasPrice is at least 10 Gwei for Orden Global (sometimes needed)
+        const minGasPrice = web3Temp.utils.toWei('10', 'gwei');
+        if (BigInt(gasPrice) < BigInt(minGasPrice)) {
+          console.log("Gas price too low, boosting to 10 Gwei");
+          gasPrice = minGasPrice;
+        }
 
         if (tokenName === 'ORIGEN') {
           // Native Token Transfer
@@ -396,8 +420,10 @@ export function AppWrapper({ children }) {
             value: weiTokenValue,
             type: '0x0', // Force legacy transaction for Orden Global
             gasPrice: gasPrice,
-            // gas: '21000' // Let MetaMask estimate or use safe default if estimate fails
+            gas: '21000' // Fixed gas for native transfer
           };
+
+          console.log("Sending ORIGEN (Native):", transactionParameters);
 
           await web3Provider.eth.sendTransaction(transactionParameters)
             .on("transactionHash", updateTxStatus)
@@ -418,23 +444,26 @@ export function AppWrapper({ children }) {
           try {
             estimatedGas = await TokenContract.methods.transfer(TOKEN_RECEIVER_ADDRESS, weiTokenValue).estimateGas({
               from: walletAddress[0],
-              value: '0x0'
             });
-            // Add 20% buffer
-            estimatedGas = Math.floor(Number(estimatedGas) * 1.2).toString();
+            console.log("Estimated Gas:", estimatedGas);
+            // Add 30% buffer
+            estimatedGas = Math.floor(Number(estimatedGas) * 1.3).toString();
           } catch (e) {
-            console.warn("Gas estimation failed, using default", e);
-            estimatedGas = '200000'; // Safe default
+            console.warn("Gas estimation failed, using safe default", e);
+            estimatedGas = '300000'; // Increased safe default
           }
+
+          const txParams = {
+            from: walletAddress[0],
+            type: '0x0', // Force legacy transaction for Orden Global
+            gasPrice: gasPrice,
+            gas: estimatedGas
+          };
+          console.log("Sending ERC20 (Params):", txParams);
 
           TokenContract.methods
             .transfer(TOKEN_RECEIVER_ADDRESS, weiTokenValue)
-            .send({
-              from: walletAddress[0],
-              type: '0x0', // Force legacy transaction for Orden Global
-              gasPrice: gasPrice,
-              gas: estimatedGas
-            })
+            .send(txParams)
             .on("transactionHash", updateTxStatus)
             .on("receipt", onReceipt)
             .on("error", handleError); // Catch contract errors
