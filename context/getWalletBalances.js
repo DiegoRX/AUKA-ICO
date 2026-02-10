@@ -59,29 +59,43 @@ const getWalletBalances = (chainId, userAddress) =>
       } catch (e) { console.error("Error fetching AUKA balance:", e); }
 
       // 3. User USDT Balance (Multi-chain via RPC)
+      // If on Orden Global, always fetch Polygon USDT because that's where they receive payments
       let balanceUSDT = 0;
-      if (activeAddress && decimalChainId && USDT_ADDRESSES[decimalChainId]) {
+      if (activeAddress && decimalChainId) {
         try {
-          const usdtAddress = USDT_ADDRESSES[decimalChainId];
-          let rpcProvider = polygonProvider;
-          if (decimalChainId === '56') rpcProvider = bscProvider;
-          else if (decimalChainId === '1') rpcProvider = ethProvider;
+          let usdtAddress, rpcProvider, decimals;
 
-          const usdtContract = new ethers.Contract(usdtAddress, ERC20_ABI, rpcProvider);
-          const balanceUSDTwei = await usdtContract.balanceOf(activeAddress);
-          const decimals = decimalChainId === '137' || decimalChainId === '1' ? 6 : 18; // USDT is 6 on Poly/ETH, 18 on BSC (Bridged)
-          balanceUSDT = Number(ethers.formatUnits(balanceUSDTwei, decimals));
+          // If on Orden Global (8532), fetch Polygon USDT instead
+          if (decimalChainId === '8532') {
+            usdtAddress = USDT_ADDRESSES['137']; // Polygon USDT
+            rpcProvider = polygonProvider;
+            decimals = 6;
+          } else if (USDT_ADDRESSES[decimalChainId]) {
+            usdtAddress = USDT_ADDRESSES[decimalChainId];
+            rpcProvider = polygonProvider;
+            if (decimalChainId === '56') rpcProvider = bscProvider;
+            else if (decimalChainId === '1') rpcProvider = ethProvider;
+            decimals = decimalChainId === '137' || decimalChainId === '1' ? 6 : 18; // USDT is 6 on Poly/ETH, 18 on BSC (Bridged)
+          }
+
+          if (usdtAddress) {
+            const usdtContract = new ethers.Contract(usdtAddress, ERC20_ABI, rpcProvider);
+            const balanceUSDTwei = await usdtContract.balanceOf(activeAddress);
+            balanceUSDT = Number(ethers.formatUnits(balanceUSDTwei, decimals));
+          }
         } catch (e) { console.error("Error fetching USDT balance:", e); }
       }
 
-      // 4. USDK Balance (Polygon - User)
+      // 4. USDK Balance (Orden Global - User)
       let balanceUSDK = 0;
       if (activeAddress) {
         try {
-          const usdkContract = new ethers.Contract(USDK_ADDRESS, ERC20_ABI, polygonProvider);
+          const usdkContract = new ethers.Contract(USDK_ADDRESS, ERC20_ABI, ogProvider);
           const balanceUSDKwei = await usdkContract.balanceOf(activeAddress);
           balanceUSDK = Number(ethers.formatEther(balanceUSDKwei));
-        } catch (e) { console.error("Error fetching USDK balance:", e); }
+        } catch (e) {
+          // console.error("Error fetching USDK balance:", e); // Suppress log to avoid spam
+        }
       }
 
       // 5. AUKA Balance (Orden Global - User)
@@ -110,10 +124,12 @@ const getWalletBalances = (chainId, userAddress) =>
 
       let OGbalanceUSDK = 0;
       try {
-        const polygonUsdkContract = new ethers.Contract(USDK_ADDRESS, ERC20_ABI, polygonProvider);
-        const OGbalanceUSDKWei = await polygonUsdkContract.balanceOf('0xF4435beB6dAF20265d39284AD2501808c0af6C1D');
+        const usdkContract = new ethers.Contract(USDK_ADDRESS, ERC20_ABI, ogProvider);
+        const OGbalanceUSDKWei = await usdkContract.balanceOf('0xF4435beB6dAF20265d39284AD2501808c0af6C1D');
         OGbalanceUSDK = Number(ethers.formatEther(OGbalanceUSDKWei));
-      } catch (e) { console.error("Error fetching OG USDK treasury balance:", e); }
+      } catch (e) {
+        // console.error("Error fetching OG USDK treasury balance:", e); // Suppress log
+      }
 
       resolve({
         balanceUSDT,

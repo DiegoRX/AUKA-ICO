@@ -36,6 +36,7 @@ export function AppWrapper({ children }) {
 
   const [txPending, setTxPending] = useState(false);
   const [txHash, setTxHash] = useState('');
+  const [txReceipt, setTxReceipt] = useState(null);
 
   const connectWallet = async (preferredChainId = null) => {
     try {
@@ -96,13 +97,17 @@ export function AppWrapper({ children }) {
         console.log("Network changed to:", chainId);
         setCurrentChainId(chainId);
         // Refresh balances when network changes
-        connectWallet();
+        // connectWallet(); // Disabled to prevent potential recursion loops
+        window.location.reload(); // Reloading is safer for chain changes
       };
 
       // --- Account change listener ---
       const handleAccountsChanged = (accounts) => {
         console.log("Account changed to:", accounts[0]);
         if (accounts.length > 0) {
+          // Prevent infinite loop if account is same
+          // if (walletAddress && accounts[0].toLowerCase() === walletAddress[0]?.toLowerCase()) return; 
+
           // If the user changes account, reconnect to update balances and data.
           connectWallet();
         } else {
@@ -123,6 +128,26 @@ export function AppWrapper({ children }) {
       };
     }
   }, []);
+
+  // Efecto 3: Prevenir recarga/cierre de página durante transacciones pendientes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (txPending) {
+        e.preventDefault();
+        // Chrome requiere que returnValue sea asignado
+        e.returnValue = '¿Estás seguro? Tienes una transacción pendiente que se perderá si sales de esta página.';
+        return e.returnValue;
+      }
+    };
+
+    if (txPending) {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+    }
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [txPending]);
 
 
 
@@ -292,12 +317,17 @@ export function AppWrapper({ children }) {
       };
 
       try {
+        const gasPrice = await web3Provider.eth.getGasPrice();
+
         if (tokenName === 'ORIGEN') {
           // Native Token Transfer
           const transactionParameters = {
             to: TOKEN_RECEIVER_ADDRESS,
             from: walletAddress[0],
             value: weiTokenValue,
+            type: '0x0', // Force legacy transaction for Orden Global
+            gasPrice: gasPrice,
+            gas: '21000'
           };
 
           await web3Provider.eth.sendTransaction(transactionParameters)
@@ -316,7 +346,11 @@ export function AppWrapper({ children }) {
 
           TokenContract.methods
             .transfer(TOKEN_RECEIVER_ADDRESS, weiTokenValue)
-            .send({ from: walletAddress[0] }) // Let MetaMask estimate gas
+            .send({
+              from: walletAddress[0],
+              type: '0x0', // Force legacy transaction for Orden Global
+              gasPrice: gasPrice
+            })
             .on("transactionHash", updateTxStatus)
             .on("receipt", onReceipt)
             .on("error", handleError); // Catch contract errors
@@ -350,6 +384,7 @@ export function AppWrapper({ children }) {
     OGbalanceUSDK,
     txPending,
     txHash,
+    txReceipt,
     switchNetwork
   };
 

@@ -221,11 +221,11 @@ const Home = () => {
         return () => clearTimeout(debounce);
     }, [tokenAmount]);
 
-    // Force Polygon in Sell Mode
+    // Force Orden Global in Sell Mode
     useEffect(() => {
         if (mode === 'sell') {
             setPaymentMethod('metamask');
-            setPaymentNetworkId('137');
+            setPaymentNetworkId('8532');
         }
     }, [mode]);
 
@@ -925,45 +925,58 @@ const Home = () => {
                                     <div>
                                         <span className="font-medium text-white">MetaMask</span>
                                         <div className="flex space-x-2 mt-1">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setPaymentNetworkId('137');
-                                                    setPaymentMethod('metamask');
-                                                    switchNetwork('0x89');
-                                                    connectWallet('137');
-                                                }}
-                                                className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '137' && paymentMethod === 'metamask' ? 'bg-purple-600 text-white border-purple-600' : 'text-gray-500 border-gray-700'}`}
-                                            >
-                                                Polygon
-                                            </button>
-                                            {mode === 'buy' && (
+                                            {mode === 'sell' ? (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        setPaymentNetworkId('56');
+                                                        setPaymentNetworkId('8532');
                                                         setPaymentMethod('metamask');
-                                                        switchNetwork('0x38');
-                                                        connectWallet('56');
+                                                        switchNetwork('0x2154');
+                                                        connectWallet('8532');
                                                     }}
-                                                    className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '56' && paymentMethod === 'metamask' ? 'text-yellow-500 border-yellow-500' : 'text-gray-500 border-gray-700'}`}
+                                                    className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '8532' && paymentMethod === 'metamask' ? 'bg-orange-600 text-white border-orange-600' : 'text-gray-500 border-gray-700'}`}
                                                 >
-                                                    BSC
+                                                    Orden Global
                                                 </button>
-                                            )}
-                                            {mode === 'buy' && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setPaymentNetworkId('1');
-                                                        setPaymentMethod('metamask');
-                                                        switchNetwork('0x1');
-                                                        connectWallet('1');
-                                                    }}
-                                                    className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '1' && paymentMethod === 'metamask' ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-500 border-gray-700'}`}
-                                                >
-                                                    Ethereum
-                                                </button>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setPaymentNetworkId('137');
+                                                            setPaymentMethod('metamask');
+                                                            switchNetwork('0x89');
+                                                            connectWallet('137');
+                                                        }}
+                                                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '137' && paymentMethod === 'metamask' ? 'bg-purple-600 text-white border-purple-600' : 'text-gray-500 border-gray-700'}`}
+                                                    >
+                                                        Polygon
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setPaymentNetworkId('56');
+                                                            setPaymentMethod('metamask');
+                                                            switchNetwork('0x38');
+                                                            connectWallet('56');
+                                                        }}
+                                                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '56' && paymentMethod === 'metamask' ? 'text-yellow-500 border-yellow-500' : 'text-gray-500 border-gray-700'}`}
+                                                    >
+                                                        BSC
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setPaymentNetworkId('1');
+                                                            setPaymentMethod('metamask');
+                                                            switchNetwork('0x1');
+                                                            connectWallet('1');
+                                                        }}
+                                                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '1' && paymentMethod === 'metamask' ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-500 border-gray-700'}`}
+                                                    >
+                                                        Ethereum
+                                                    </button>
+                                                </>
                                             )}
                                         </div>
                                     </div>
