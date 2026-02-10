@@ -317,7 +317,12 @@ export function AppWrapper({ children }) {
 
     // Always switch to Orden Global (8532) for selling (sending tokens back to Treasury)
     try {
-      await switchNetwork('0x2154');
+      // Check current chain before switching to avoid unnecessary modal
+      const currentChain = window.ethereum.chainId; // Hex string e.g. 0x2154
+      if (currentChain !== '0x2154') {
+        console.log(`Switching from ${currentChain} to 0x2154...`);
+        await switchNetwork('0x2154');
+      }
     } catch (e) {
       console.error("Failed to switch to Orden Global", e);
       Swal.fire({
@@ -372,9 +377,13 @@ export function AppWrapper({ children }) {
             confirmButtonColor: '#fcd436'
           });
           setTxPending(false);
+          // Refresh balances after successful DB update
+          connectWallet();
         }).catch(error => {
           console.error('PostSell Error:', error);
           setTxPending(false);
+          // Even if backend fails, on-chain tx succeeded, so refresh balances
+          connectWallet();
         });
       };
 
