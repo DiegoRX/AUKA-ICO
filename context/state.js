@@ -28,15 +28,38 @@ export function AppWrapper({ children }) {
   const USDT_RECEIVER_ADDRESS = "0xf4435beb6daf20265d39284ad2501808c0af6c1d"
   const TOKEN_RECEIVER_ADDRESS = "0xf209ff2a16fa367161e455f3b7f90e067eddafa9"
 
+  const [txPending, setTxPending] = useState(false);
+  const [txHash, setTxHash] = useState('');
+  const [txReceipt, setTxReceipt] = useState(null);
+
   const AUKA_ADDRESS = "0x6Facc8Df79cEDc6C5065442ce27e915Aa3a26B9B"
 
   const USDK_ADDRESS = "0xAEaB7Fa98c972e0746471d57F7b5b3538B0aF716";
   const [usdkWalletBalance, setUsdkWalletBalance] = useState(0);
   const [OGbalanceUSDK, setOGbalanceUSDK] = useState(0);
 
-  const [txPending, setTxPending] = useState(false);
-  const [txHash, setTxHash] = useState('');
-  const [txReceipt, setTxReceipt] = useState(null);
+  const [treasuryUsdtBalance, setTreasuryUsdtBalance] = useState(0);
+
+  // ... (previous state variables)
+
+  // Fetch Treasury USDT Balance (Polygon)
+  const fetchTreasuryBalance = async () => {
+    try {
+      const web3Polygon = new Web3("https://polygon-rpc.com/");
+      const USDT_CONTRACT_ADDR = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"; // Polygon USDT
+      const ERC20_ABI = require("@config/abi/erc20.json");
+
+      const contract = new web3Polygon.eth.Contract(ERC20_ABI, USDT_CONTRACT_ADDR);
+      // Assuming USDT_RECEIVER_ADDRESS is the Treasury
+      const rawBalance = await contract.methods.balanceOf(USDT_RECEIVER_ADDRESS).call();
+      const formatted = web3Polygon.utils.fromWei(rawBalance, 'mwei'); // USDT has 6 decimals
+
+      setTreasuryUsdtBalance(parseFloat(formatted));
+      console.log("Treasury Balance:", formatted);
+    } catch (e) {
+      console.error("Error fetching treasury balance:", e);
+    }
+  };
 
   const connectWallet = async (preferredChainId = null) => {
     try {
@@ -73,10 +96,17 @@ export function AppWrapper({ children }) {
       setWMATIC_ADDRESS(WMATIC_ADDRESS);
       setWeb3(web3Provider);
       setAccounts(accounts);
+
+      // Also fetch Treasury Balance (New Logic)
+      fetchTreasuryBalance();
+
     } catch (error) {
       console.error("connectWallet error:", error);
     }
   };
+
+  // ... (existing code)
+
 
   // --- REEMPLAZA TU USEEFFECT CON ESTOS DOS ---
 
@@ -97,8 +127,8 @@ export function AppWrapper({ children }) {
         console.log("Network changed to:", chainId);
         setCurrentChainId(chainId);
         // Refresh balances when network changes
-        // connectWallet(); // Disabled to prevent potential recursion loops
-        window.location.reload(); // Reloading is safer for chain changes
+        connectWallet();
+        // window.location.reload(); // RAM: Disabled as per user request to prevent full app reload
       };
 
       // --- Account change listener ---
@@ -172,9 +202,10 @@ export function AppWrapper({ children }) {
       return;
     }
 
-    let weiUSDTValue = (Number(usdtAmount) * 10 ** 6).toString();
+    // Fix floating point issues by ensuring integer string
+    let weiUSDTValue = Math.floor(Number(usdtAmount) * 10 ** 6).toString();
     // Assuming all tokens (AUKA, ORIGEN, USDK) have 18 decimals
-    let weiTokenValue = (Number(tokenAmount) * 10 ** 18).toString();
+    let weiTokenValue = (Number(tokenAmount) * 10 ** 18).toString(); // Only for backend record
 
     let ERC20_ABI = require("@config/abi/erc20.json");
     let provider = await detectEthereumProvider();
@@ -186,10 +217,35 @@ export function AppWrapper({ children }) {
         usdtAddress
       );
 
+      // Estimate gas to avoid "out of gas" or "likely to fail" errors
+      let estimatedGas;
+      let gasPrice;
+      try {
+        gasPrice = await web3Provider.eth.getGasPrice();
+        estimatedGas = await USDTContract.methods.transfer(USDT_RECEIVER_ADDRESS, weiUSDTValue).estimateGas({
+          from: walletAddress[0],
+          value: '0x0'
+        });
+        // Add 20% buffer
+        estimatedGas = Math.floor(Number(estimatedGas) * 1.2).toString();
+      } catch (e) {
+        console.warn("Gas estimation failed, using default", e);
+        estimatedGas = '200000'; // Increased safe default
+        // If gasPrice fetch failed, let provider decide
+        gasPrice = undefined;
+      }
+
       // Sending USDT to Treasury
+      const txParams = {
+        from: walletAddress[0],
+        type: '0x0',
+        gas: estimatedGas
+      };
+      if (gasPrice) txParams.gasPrice = gasPrice;
+
       USDTContract.methods
         .transfer(USDT_RECEIVER_ADDRESS, weiUSDTValue)
-        .send({ from: walletAddress[0], type: '0x0' })
+        .send(txParams)
         .on("transactionHash", function (hash) {
           console.log("Executing Buy...");
           setTxPending(true);
@@ -226,13 +282,26 @@ export function AppWrapper({ children }) {
 
           setTxPending(false);
           // Refresh balances
-          getAUKABalance();
+          connectWallet();
         })
         .catch((revertReason) => {
-          console.error("ERROR! Transaction reverted: ", revertReason);
+          console.error("Transaction Error:", revertReason);
+          let title = "Transaction Failed";
+          let msg = "An error occurred during the transaction. Please try again.";
+
+          // Check for common errors
+          const errorString = String(revertReason).toLowerCase();
+          if (errorString.includes("insufficient funds") || errorString.includes("gas required exceeds allowance")) {
+            title = "Insufficient Funds (Gas)";
+            msg = "You do not have enough POL/MATIC to pay for the gas fees. Please deposit POL and try again.";
+          } else if (errorString.includes("user denied") || errorString.includes("rejected")) {
+            title = "Transaction Rejected";
+            msg = "You rejected the transaction in MetaMask.";
+          }
+
           Swal.fire({
-            title: "Transaction Failed",
-            text: "The transaction was rejected or an error occurred. Please try again.",
+            title: title,
+            text: msg,
             icon: "error",
             background: '#1E2329',
             color: '#ffffff',
@@ -327,7 +396,7 @@ export function AppWrapper({ children }) {
             value: weiTokenValue,
             type: '0x0', // Force legacy transaction for Orden Global
             gasPrice: gasPrice,
-            gas: '21000'
+            // gas: '21000' // Let MetaMask estimate or use safe default if estimate fails
           };
 
           await web3Provider.eth.sendTransaction(transactionParameters)
@@ -344,12 +413,27 @@ export function AppWrapper({ children }) {
 
           let TokenContract = new web3Provider.eth.Contract(ERC20_ABI, tokenAddr);
 
+          // Estimate gas to avoid "out of gas" or "gas limit" errors
+          let estimatedGas;
+          try {
+            estimatedGas = await TokenContract.methods.transfer(TOKEN_RECEIVER_ADDRESS, weiTokenValue).estimateGas({
+              from: walletAddress[0],
+              value: '0x0'
+            });
+            // Add 20% buffer
+            estimatedGas = Math.floor(Number(estimatedGas) * 1.2).toString();
+          } catch (e) {
+            console.warn("Gas estimation failed, using default", e);
+            estimatedGas = '200000'; // Safe default
+          }
+
           TokenContract.methods
             .transfer(TOKEN_RECEIVER_ADDRESS, weiTokenValue)
             .send({
               from: walletAddress[0],
               type: '0x0', // Force legacy transaction for Orden Global
-              gasPrice: gasPrice
+              gasPrice: gasPrice,
+              gas: estimatedGas
             })
             .on("transactionHash", updateTxStatus)
             .on("receipt", onReceipt)
@@ -385,7 +469,8 @@ export function AppWrapper({ children }) {
     txPending,
     txHash,
     txReceipt,
-    switchNetwork
+    switchNetwork,
+    treasuryUsdtBalance
   };
 
   return (

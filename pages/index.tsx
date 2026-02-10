@@ -94,10 +94,18 @@ const Home = () => {
         currentChainId,
         txPending,
         txHash,
-        switchNetwork
+        switchNetwork,
+        treasuryUsdtBalance // New state
     } = useAppContext();
 
     const [lastChanged, setLastChanged] = useState<'token' | 'usdt'>('token');
+
+    // Check if Treasury has enough funds for the sell
+    const isTreasurySolvent = useMemo(() => {
+        if (mode === 'buy') return true;
+        if (!usdtAmount || parseFloat(usdtAmount) <= 0) return true;
+        return parseFloat(usdtAmount) <= (treasuryUsdtBalance || 0);
+    }, [mode, usdtAmount, treasuryUsdtBalance]);
 
     // --- LOGIC FROM USER REQUEST ---
     const sellBalances = useMemo(() => ({
@@ -147,7 +155,9 @@ const Home = () => {
         if (paymentMethod === 'metamask' && walletAddress.length > 0) {
             connectWallet(paymentNetworkId);
         }
-    }, [paymentNetworkId, walletAddress, paymentMethod]);
+        // Removing walletAddress from dependencies to prevent infinite loop
+        // connectWallet updates walletAddress, which triggers this effect again
+    }, [paymentNetworkId, paymentMethod]);
 
     // Limpiar persistencia
     const clearOrderPersistence = useCallback(() => {
@@ -245,8 +255,10 @@ const Home = () => {
         if (rate > 0 && newValue && !isNaN(parseFloat(newValue))) {
             const tokens = parseFloat(newValue) / rate;
             setTokenAmount(tokens.toFixed(2));
-        } else if (newValue === '') {
-            setTokenAmount('');
+        } else {
+            // Rate missing or invalid - force fetch to get rate
+            // We can't calc tokens yet, but fetching will update rate
+            fetchQuote(true);
         }
     };
 
@@ -264,6 +276,10 @@ const Home = () => {
             setUsdtAmount(total.toFixed(paymentCurrency === 'BNB' ? 6 : 2));
         } else if (newValue === '') {
             setUsdtAmount('');
+        } else {
+            // Force fetch if rate missing
+            // fetchQuote will be called by useEffect[tokenAmount] anyway because setTokenAmount happened
+            // but explicit call doesn't hurt if debounce is slow
         }
     };
 
@@ -453,13 +469,7 @@ const Home = () => {
     }, [orderPolling, currentOrder?.orderId, tokenAmount, selectedToken.symbol]);
 
     // Handle main action button
-    const handleAction = () => {
-        if (paymentMethod === 'metamask') {
-            handleMetaMaskPurchase();
-        } else {
-            handleBinancePayPurchase();
-        }
-    };
+    // (Consolidated into the single handleAction definition below)
 
     // Login handler
     const submitHandler = async (data: any) => {
@@ -532,6 +542,24 @@ const Home = () => {
         }
     };
 
+    // --- UI HELPERS FROM USER REQUEST ---
+    const handleSwitchToPolygon = async () => {
+        try {
+            await switchNetwork('0x89'); // Polygon 137
+        } catch (e) {
+            console.error("Switch to Polygon failed", e);
+        }
+    };
+
+    const handleSwitchToOrdenGlobal = async () => {
+        try {
+            await switchNetwork('0x2154'); // Orden Global 8532
+        } catch (e) {
+            console.error("Switch to Orden Global failed", e);
+        }
+    };
+
+    // --- RESTORED COMPONENTS ---
     // Buy/Sell Switch Component
     const BuySellSwitch = () => (
         <div className="bg-black/40 p-1.5 rounded-2xl flex mb-8">
@@ -601,6 +629,58 @@ const Home = () => {
             )}
         </div>
     );
+
+    // Recalculate Token Amount when Exchange Rate loads (if user started with USDT)
+    useEffect(() => {
+        if (lastChanged === 'usdt' && usdtAmount && parseFloat(usdtAmount) > 0) {
+            const rate = parseFloat(exchangeRate);
+            // Only calc if we have a rate and tokenAmount is empty or needs update (optional logic)
+            // But main case: rate was 0, now it's X.
+            if (rate > 0) {
+                const tokens = parseFloat(usdtAmount) / rate;
+                // Avoid infinite loop if values are close enough? 
+                // formatted strings comparison might be enough
+                const formatted = tokens.toFixed(2);
+                if (tokenAmount !== formatted) {
+                    setTokenAmount(formatted);
+                }
+            }
+        }
+    }, [exchangeRate, usdtAmount, lastChanged]); // Dependencies
+
+    // --- MAIN ACTION HANDLERS ---
+    // (Removed duplicate handleAction here, relying on the one below or consolidating)
+
+    const handleAction = () => {
+        if (mode === 'buy') {
+            // BUY LOGIC (User pays USDT on Polygon)
+            // Automatic switch handled by buyToken/handleMetaMaskPurchase
+            if (paymentMethod === 'metamask') {
+                handleMetaMaskPurchase();
+            } else {
+                handleBinancePayPurchase();
+            }
+        } else {
+            // SELL LOGIC (User pays Token on Orden Global)
+            if (String(currentChainId) !== '8532' && String(currentChainId) !== '0x2154') {
+                Swal.fire({
+                    title: "Change to Orden Global",
+                    text: "Please switch your wallet to Orden Global to sell tokens.",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Switch Network",
+                    background: '#1E2329',
+                    color: '#ffffff',
+                    confirmButtonColor: '#fcd436'
+                }).then((result) => {
+                    if (result.isConfirmed) handleSwitchToOrdenGlobal();
+                });
+                return;
+            }
+            // Sell logic
+            handleMetaMaskPurchase();
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#0B0E11] text-white font-sans">
@@ -1023,7 +1103,7 @@ const Home = () => {
                         {/* Action Button */}
                         <button
                             onClick={handleAction}
-                            disabled={orderLoading || !tokenAmount || parseFloat(tokenAmount) <= 0}
+                            disabled={orderLoading || !tokenAmount || parseFloat(tokenAmount) <= 0 || (mode === 'sell' && !isTreasurySolvent)}
                             className="w-full bg-gradient-to-r from-[#fcd436] via-[#f0b90b] to-[#f08c0b] text-black font-extrabold py-4 rounded-2xl mt-8 shadow-[0_10px_30px_-5px_rgba(252,213,53,0.4)] hover:shadow-[0_15px_35px_-5px_rgba(252,213,53,0.5)] hover:-translate-y-1 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-xl uppercase tracking-wider"
                         >
                             {orderLoading ? (
@@ -1035,6 +1115,12 @@ const Home = () => {
                                 `${mode === 'buy' ? 'Buy' : 'Sell'} ${tokenAmount} ${selectedToken.symbol}`
                             )}
                         </button>
+
+                        {mode === 'sell' && !isTreasurySolvent && (
+                            <div className="mt-3 bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold p-3 rounded-xl text-center">
+                                Insufficient Treasury Liquidity. Max Sell: {treasuryUsdtBalance?.toFixed(2)} USDT
+                            </div>
+                        )}
                     </div>
                 </div>
 
