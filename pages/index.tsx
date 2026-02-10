@@ -31,10 +31,11 @@ import { API_BASE_URL } from "@config/api";
 
 
 // Tokens disponibles para compra
+// Tokens disponibles para compra
 const AVAILABLE_TOKENS = [
-    { symbol: 'ORIGEN', name: 'Origen', color: '#3B82F6', icon: '🌐' },
-    { symbol: 'AUKA', name: 'Auka', color: '#10B981', icon: '🦅' },
-    { symbol: 'USDK', name: 'USDK', color: '#8B5CF6', icon: '💎' },
+    { symbol: 'ORIGEN', name: 'Origen', color: '#3B82F6', image: '/assets/tokens/origen.png' },
+    { symbol: 'AUKA', name: 'Auka', color: '#10B981', image: '/assets/tokens/auka.png' },
+    { symbol: 'USDK', name: 'USDK', color: '#8B5CF6', image: '/assets/tokens/usdk.png' },
 ];
 
 // Polygon USDT address
@@ -438,6 +439,8 @@ const Home = () => {
                     if (status.status === 'TOKENS_SENT') {
                         setOrderPolling(false);
                         clearOrderPersistence();
+                        // Reload balances
+                        connectWallet();
                         Swal.fire({
                             icon: 'success',
                             title: 'Tokens Sent!',
@@ -567,7 +570,7 @@ const Home = () => {
                 onClick={() => setMode('buy')}
                 className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${mode === 'buy'
                     ? 'bg-[#1E2329] shadow-sm text-white'
-                    : 'text-gray-500 hover:text-gray-300'
+                    : 'text-gray-400 hover:text-gray-200'
                     }`}
             >
                 Buy
@@ -576,7 +579,7 @@ const Home = () => {
                 onClick={() => setMode('sell')}
                 className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${mode === 'sell'
                     ? 'bg-[#1E2329] shadow-sm text-white'
-                    : 'text-gray-500 hover:text-gray-300'
+                    : 'text-gray-400 hover:text-gray-200'
                     }`}
             >
                 Sell
@@ -591,11 +594,14 @@ const Home = () => {
                 onClick={() => setShowTokenSelector(!showTokenSelector)}
                 className="flex items-center space-x-2 cursor-pointer hover:bg-gray-800 p-1.5 rounded-lg transition-colors ml-2"
             >
-                <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
-                    style={{ backgroundColor: selectedToken.color }}
-                >
-                    {selectedToken.icon}
+                <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center bg-transparent">
+                    <Image
+                        src={(selectedToken as any).image}
+                        alt={selectedToken.symbol}
+                        width={24}
+                        height={24}
+                        className="object-cover"
+                    />
                 </div>
                 <span className="font-bold text-white">{selectedToken.symbol}</span>
                 <MdExpandMore className="text-gray-400" />
@@ -613,15 +619,18 @@ const Home = () => {
                             className={`flex items-center space-x-3 p-3 cursor-pointer hover:bg-gray-800 transition-colors ${selectedToken.symbol === token.symbol ? 'bg-gray-800' : ''
                                 }`}
                         >
-                            <div
-                                className="w-8 h-8 rounded-full flex items-center justify-center"
-                                style={{ backgroundColor: token.color }}
-                            >
-                                {token.icon}
+                            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-transparent">
+                                <Image
+                                    src={(token as any).image}
+                                    alt={token.symbol}
+                                    width={32}
+                                    height={32}
+                                    className="object-cover"
+                                />
                             </div>
                             <div>
                                 <div className="font-bold text-white">{token.symbol}</div>
-                                <div className="text-xs text-gray-500">{token.name}</div>
+                                <div className="text-xs text-gray-400">{token.name}</div>
                             </div>
                         </div>
                     ))}
@@ -694,7 +703,7 @@ const Home = () => {
                                 ORDEN<span className="text-[#fcd436]">EX</span>
                             </span>
                         </div>
-                        <div className="hidden md:flex items-center space-x-6 text-sm font-medium text-gray-500">
+                        <div className="hidden md:flex items-center space-x-6 text-sm font-medium text-gray-400">
                         </div>
                     </div>
 
@@ -754,7 +763,7 @@ const Home = () => {
                             Buy Crypto <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#fcd436] to-[#f08c0b]">Instantly</span><br />
                             <span className="text-[#fcd436]">in 3 Easy Steps</span>
                         </h1>
-                        <p className="text-gray-400 text-xl max-w-md font-medium leading-relaxed">
+                        <p className="text-gray-300 text-xl max-w-md font-medium leading-relaxed">
                             Buy {selectedToken.symbol} with USDT using MetaMask or Binance Pay. Fast, secure, and easy.
                         </p>
                     </div>
@@ -767,7 +776,7 @@ const Home = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-[#0B0E11] rounded-xl p-4 shadow-inner relative group">
-                                    <div className="text-gray-500 text-xs font-semibold mb-1 uppercase tracking-wider flex items-center space-x-1">
+                                    <div className="text-gray-400 text-xs font-semibold mb-1 uppercase tracking-wider flex items-center space-x-1">
                                         <span>USDT ({paymentNetworkId === '137' ? 'Polygon' : paymentNetworkId === '56' ? 'BSC' : 'Ethereum'})</span>
                                         <MdInfoOutline
                                             className="cursor-pointer hover:text-[#fcd436] transition-colors"
@@ -796,17 +805,17 @@ const Home = () => {
                                         />
                                     </div>
                                     <div className="text-2xl font-bold">{usdtWalletBalance?.toFixed(2) || '0.00'}</div>
-                                    <div className="text-xs text-gray-500">≈ ${usdtWalletBalance?.toFixed(2) || '0.00'} USD</div>
+                                    <div className="text-xs text-gray-400">≈ ${usdtWalletBalance?.toFixed(2) || '0.00'} USD</div>
                                 </div>
                                 <div className="bg-[#0B0E11] rounded-xl p-4 shadow-inner relative group">
-                                    <div className="text-gray-500 text-xs font-semibold mb-1 uppercase tracking-wider">ORIGEN (Orden Global)</div>
+                                    <div className="text-gray-400 text-xs font-semibold mb-1 uppercase tracking-wider">ORIGEN (Orden Global)</div>
                                     <div className="text-2xl font-bold">{origenWalletBalance?.toFixed(2) || '0.00'}</div>
-                                    <div className="text-xs text-gray-500">
+                                    <div className="text-xs text-gray-400">
                                         {goldPrice ? `≈ $${(parseFloat(origenWalletBalance as any || '0') * ((parseFloat(goldPrice.ounce) / 31.1035) / 55)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD` : 'Loading...'}
                                     </div>
                                 </div>
                                 <div className="bg-[#0B0E11] rounded-xl p-4 shadow-inner relative group">
-                                    <div className="text-gray-500 text-xs font-semibold mb-1 uppercase tracking-wider flex items-center space-x-1">
+                                    <div className="text-gray-400 text-xs font-semibold mb-1 uppercase tracking-wider flex items-center space-x-1">
                                         <span>AUKA (Orden Global)</span>
                                         <MdInfoOutline
                                             className="cursor-pointer hover:text-[#fcd436] transition-colors"
@@ -835,12 +844,12 @@ const Home = () => {
                                         />
                                     </div>
                                     <div className="text-2xl font-bold">{ondkBalance?.toFixed(2) || '0.00'}</div>
-                                    <div className="text-xs text-gray-500">
+                                    <div className="text-xs text-gray-400">
                                         {goldPrice ? `≈ $${(parseFloat(ondkBalance as any || '0') * parseFloat(goldPrice.ounce)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD` : 'Loading...'}
                                     </div>
                                 </div>
                                 <div className="bg-[#0B0E11] rounded-xl p-4 shadow-inner relative group">
-                                    <div className="text-gray-500 text-xs font-semibold mb-1 uppercase tracking-wider flex items-center space-x-1">
+                                    <div className="text-gray-400 text-xs font-semibold mb-1 uppercase tracking-wider flex items-center space-x-1">
                                         <span>USDK (Polygon)</span>
                                         <MdInfoOutline
                                             className="cursor-pointer hover:text-[#fcd436] transition-colors"
@@ -869,7 +878,7 @@ const Home = () => {
                                         />
                                     </div>
                                     <div className="text-2xl font-bold">{usdkWalletBalance?.toFixed(2) || '0.00'}</div>
-                                    <div className="text-xs text-gray-500">≈ ${usdkWalletBalance?.toFixed(2) || '0.00'} USD</div>
+                                    <div className="text-xs text-gray-400">≈ ${usdkWalletBalance?.toFixed(2) || '0.00'} USD</div>
                                 </div>
                             </div>
                         </div>
@@ -899,11 +908,11 @@ const Home = () => {
                             {/* Token Amount Input */}
                             <div className="group">
                                 <div className="flex justify-between items-center mb-1 ml-1">
-                                    <label className="text-xs font-medium text-gray-500">
+                                    <label className="text-xs font-medium text-gray-400">
                                         {mode === 'buy' ? 'You Receive' : 'You Sell'}
                                     </label>
                                     {walletAddress.length > 0 && (
-                                        <span className="text-xs text-gray-500 cursor-pointer hover:text-[#fcd436]" onClick={handleSetMax}>
+                                        <span className="text-xs text-gray-400 cursor-pointer hover:text-[#fcd436]" onClick={handleSetMax}>
                                             Balance: {currentSellBalance.toFixed(4)} {selectedToken.symbol}
                                         </span>
                                     )}
@@ -936,11 +945,11 @@ const Home = () => {
                             {/* USDT Amount Display */}
                             <div className="group">
                                 <div className="flex justify-between items-center mb-1 ml-1">
-                                    <label className="text-xs font-medium text-gray-500 flex items-center">
+                                    <label className="text-xs font-medium text-gray-400 flex items-center">
                                         {mode === 'buy' ? 'You Receive' : 'You Pay'} <MdInfoOutline className="text-[14px] ml-1 opacity-60" />
                                     </label>
                                     {paymentMethod === 'metamask' && walletAddress.length > 0 && (
-                                        <span className="text-xs text-gray-500 cursor-pointer hover:text-[#fcd436]" onClick={handleSetMax}>
+                                        <span className="text-xs text-gray-400 cursor-pointer hover:text-[#fcd436]" onClick={handleSetMax}>
                                             Balance: {parseFloat(usdtWalletBalance as any || '0').toFixed(2)} USDT
                                         </span>
                                     )}
@@ -968,7 +977,7 @@ const Home = () => {
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-center mt-1 ml-1">
-                                    <div className="text-xs text-gray-500">
+                                    <div className="text-xs text-gray-400">
                                         Rate: 1 {selectedToken.symbol} = {exchangeRate} {paymentMethod === 'binance' ? paymentCurrency : 'USDT'}
                                     </div>
                                     {paymentMethod === 'binance' && (
@@ -989,7 +998,7 @@ const Home = () => {
 
                         {/* Payment Methods */}
                         <div className="pt-4 space-y-3">
-                            <label className="block text-xs font-medium text-gray-500 mb-2 ml-1">
+                            <label className="block text-xs font-medium text-gray-400 mb-2 ml-1">
                                 Payment Method
                             </label>
 
@@ -1014,7 +1023,7 @@ const Home = () => {
                                                         switchNetwork('0x2154');
                                                         connectWallet('8532');
                                                     }}
-                                                    className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '8532' && paymentMethod === 'metamask' ? 'bg-orange-600 text-white border-orange-600' : 'text-gray-500 border-gray-700'}`}
+                                                    className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '8532' && paymentMethod === 'metamask' ? 'bg-orange-600 text-white border-orange-600' : 'text-gray-400 border-gray-700'}`}
                                                 >
                                                     Orden Global
                                                 </button>
@@ -1028,7 +1037,7 @@ const Home = () => {
                                                             switchNetwork('0x89');
                                                             connectWallet('137');
                                                         }}
-                                                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '137' && paymentMethod === 'metamask' ? 'bg-purple-600 text-white border-purple-600' : 'text-gray-500 border-gray-700'}`}
+                                                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '137' && paymentMethod === 'metamask' ? 'bg-purple-600 text-white border-purple-600' : 'text-gray-400 border-gray-700'}`}
                                                     >
                                                         Polygon
                                                     </button>
@@ -1040,7 +1049,7 @@ const Home = () => {
                                                             switchNetwork('0x38');
                                                             connectWallet('56');
                                                         }}
-                                                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '56' && paymentMethod === 'metamask' ? 'text-yellow-500 border-yellow-500' : 'text-gray-500 border-gray-700'}`}
+                                                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '56' && paymentMethod === 'metamask' ? 'text-yellow-500 border-yellow-500' : 'text-gray-400 border-gray-700'}`}
                                                     >
                                                         BSC
                                                     </button>
@@ -1052,7 +1061,7 @@ const Home = () => {
                                                             switchNetwork('0x1');
                                                             connectWallet('1');
                                                         }}
-                                                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '1' && paymentMethod === 'metamask' ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-500 border-gray-700'}`}
+                                                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '1' && paymentMethod === 'metamask' ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-400 border-gray-700'}`}
                                                     >
                                                         Ethereum
                                                     </button>
@@ -1173,7 +1182,7 @@ const Home = () => {
                                             <input
                                                 type="email"
                                                 placeholder="Email"
-                                                className="w-full bg-[#0B0E11] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-[#fcd436] outline-none transition-all"
+                                                className="w-full bg-[#0B0E11] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-[#fcd436] outline-none transition-all"
                                                 {...register("email", {
                                                     required: "Required",
                                                     pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i, message: "Invalid email" },
@@ -1186,7 +1195,7 @@ const Home = () => {
                                             <input
                                                 type={showPassword ? "text" : "password"}
                                                 placeholder="Password"
-                                                className="w-full bg-[#0B0E11] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-[#fcd436] outline-none transition-all pr-12"
+                                                className="w-full bg-[#0B0E11] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-[#fcd436] outline-none transition-all pr-12"
                                                 {...register("password", { required: "Required" })}
                                             />
                                             <button
@@ -1243,7 +1252,7 @@ const Home = () => {
 
                                 <div className="bg-[#0B0E11] rounded-xl p-4">
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-gray-500 text-sm">Status</span>
+                                        <span className="text-gray-400 text-sm">Status</span>
                                         <span className={`font-bold ${getStatusColor(currentOrder.status)}`}>
                                             {currentOrder.status === 'PENDING' && <span className="flex items-center space-x-1"><MdRefresh className="animate-spin" /><span>Waiting for payment</span></span>}
                                             {currentOrder.status === 'PAID' && <span className="flex items-center space-x-1"><MdRefresh className="animate-spin" /><span>Processing tokens</span></span>}
@@ -1251,7 +1260,7 @@ const Home = () => {
                                             {currentOrder.status === 'FAILED' && <span className="flex items-center space-x-1"><MdError /><span>Failed</span></span>}
                                         </span>
                                     </div>
-                                    <div className="text-xs text-gray-500">Order ID: {currentOrder.orderId}</div>
+                                    <div className="text-xs text-gray-400">Order ID: {currentOrder.orderId}</div>
                                 </div>
 
                                 {currentOrder.qrContent && currentOrder.status === 'PENDING' && (
