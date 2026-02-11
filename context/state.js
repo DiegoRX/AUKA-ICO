@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import getBlockchain, { switchNetwork } from "./ethereum.js";
 import getWalletBalances from './getWalletBalances.js'
 import detectEthereumProvider from "@metamask/detect-provider";
@@ -39,7 +39,7 @@ export function AppWrapper({ children }) {
   const [OGbalanceUSDK, setOGbalanceUSDK] = useState(0);
 
   // Ref to remember last selected payment network (prevents MetaMask events from overwriting)
-  const lastPreferredChainIdRef = { current: '137' };
+  const lastPreferredChainIdRef = useRef('137');
 
   const [treasuryUsdtBalance, setTreasuryUsdtBalance] = useState(0);
 
