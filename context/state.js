@@ -38,6 +38,9 @@ export function AppWrapper({ children }) {
   const [usdkWalletBalance, setUsdkWalletBalance] = useState(0);
   const [OGbalanceUSDK, setOGbalanceUSDK] = useState(0);
 
+  // Ref to remember last selected payment network (prevents MetaMask events from overwriting)
+  const lastPreferredChainIdRef = { current: '137' };
+
   const [treasuryUsdtBalance, setTreasuryUsdtBalance] = useState(0);
 
   // ... (previous state variables)
@@ -98,7 +101,11 @@ export function AppWrapper({ children }) {
         web3Provider,
       } = await getBlockchain();
 
-      const targetChainId = preferredChainId || currentChainId;
+      // Remember the preferred chain so MetaMask events use it
+      if (preferredChainId) {
+        lastPreferredChainIdRef.current = preferredChainId;
+      }
+      const targetChainId = preferredChainId || lastPreferredChainIdRef.current || currentChainId;
 
       const {
         balanceUSDT,

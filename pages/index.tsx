@@ -241,11 +241,12 @@ const Home = () => {
         return () => clearTimeout(debounce);
     }, [tokenAmount]);
 
-    // Force Orden Global in Sell Mode
+    // Force Orden Global in MetaMask for Sell, default payout to Polygon
     useEffect(() => {
         if (mode === 'sell') {
             setPaymentMethod('metamask');
-            setPaymentNetworkId('8532');
+            setPaymentNetworkId('137'); // Default payout network = Polygon
+            switchNetwork('0x2154');    // Switch MetaMask to Orden Global for token transfer
         }
     }, [mode]);
 
@@ -1170,7 +1171,7 @@ const Home = () => {
 
                         {mode === 'sell' && !isTreasurySolvent && (
                             <div className="mt-3 bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold p-3 rounded-xl text-center">
-                                Insufficient Treasury Liquidity on {paymentNetworkId === '137' ? 'Polygon' : paymentNetworkId === '56' ? 'BSC' : 'Ethereum'}. Available: {treasuryUsdtBalance?.toFixed(2) || '0.00'} USDT
+                                Insufficient Treasury Liquidity on {paymentNetworkId === '137' ? 'Polygon' : paymentNetworkId === '56' ? 'BSC' : 'Ethereum'}.
                             </div>
                         )}
                     </div>
