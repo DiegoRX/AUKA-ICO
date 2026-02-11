@@ -96,7 +96,8 @@ const Home = () => {
         txPending,
         txHash,
         switchNetwork,
-        treasuryUsdtBalance // New state
+        treasuryUsdtBalance, // New state
+        fetchTreasuryBalance
     } = useAppContext();
 
     const [lastChanged, setLastChanged] = useState<'token' | 'usdt'>('token');
@@ -159,6 +160,14 @@ const Home = () => {
         // Removing walletAddress from dependencies to prevent infinite loop
         // connectWallet updates walletAddress, which triggers this effect again
     }, [paymentNetworkId, paymentMethod]);
+
+    // Fetch treasury balance on the selected payout network
+    // Runs on network change and mode change — needed for sell mode validation
+    useEffect(() => {
+        if (fetchTreasuryBalance) {
+            fetchTreasuryBalance(paymentNetworkId);
+        }
+    }, [paymentNetworkId, mode]);
 
     // Limpiar persistencia
     const clearOrderPersistence = useCallback(() => {
@@ -764,7 +773,7 @@ const Home = () => {
                             <span className="text-[#fcd436]">in 3 Easy Steps</span>
                         </h1>
                         <p className="text-gray-300 text-xl max-w-md font-medium leading-relaxed">
-                            Buy {selectedToken.symbol} with USDT using MetaMask or Binance Pay. Fast, secure, and easy.
+                            Buy {selectedToken.symbol} with USDT using MetaMask. Fast, secure, and easy.
                         </p>
                     </div>
 
@@ -773,6 +782,20 @@ const Home = () => {
                         <div className="bg-[#1E2329] rounded-2xl p-6 shadow-xl">
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-lg font-bold text-[#fcd436]">Your Balances</h3>
+                                <button
+                                    onClick={() => {
+                                        const btn = document.getElementById('refresh-balances-btn');
+                                        if (btn) btn.classList.add('animate-spin');
+                                        connectWallet();
+                                        setTimeout(() => {
+                                            if (btn) btn.classList.remove('animate-spin');
+                                        }, 1500);
+                                    }}
+                                    className="p-1.5 rounded-lg bg-[#0B0E11] hover:bg-[#2B3139] transition-all duration-200 group"
+                                    title="Refresh Balances"
+                                >
+                                    <MdRefresh id="refresh-balances-btn" className="text-lg text-gray-400 group-hover:text-[#fcd436] transition-colors" />
+                                </button>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-[#0B0E11] rounded-xl p-4 shadow-inner relative group">
@@ -946,7 +969,7 @@ const Home = () => {
                             <div className="group">
                                 <div className="flex justify-between items-center mb-1 ml-1">
                                     <label className="text-xs font-medium text-gray-400 flex items-center">
-                                        {mode === 'buy' ? 'You Receive' : 'You Pay'} <MdInfoOutline className="text-[14px] ml-1 opacity-60" />
+                                        {mode === 'buy' ? 'You Pay' : 'You Receive'} <MdInfoOutline className="text-[14px] ml-1 opacity-60" />
                                     </label>
                                     {paymentMethod === 'metamask' && walletAddress.length > 0 && (
                                         <span className="text-xs text-gray-400 cursor-pointer hover:text-[#fcd436]" onClick={handleSetMax}>
@@ -1015,18 +1038,38 @@ const Home = () => {
                                         <span className="font-medium text-white">MetaMask</span>
                                         <div className="flex space-x-2 mt-1">
                                             {mode === 'sell' ? (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setPaymentNetworkId('8532');
-                                                        setPaymentMethod('metamask');
-                                                        switchNetwork('0x2154');
-                                                        connectWallet('8532');
-                                                    }}
-                                                    className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '8532' && paymentMethod === 'metamask' ? 'bg-orange-600 text-white border-orange-600' : 'text-gray-400 border-gray-700'}`}
-                                                >
-                                                    Orden Global
-                                                </button>
+                                                <>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setPaymentNetworkId('137');
+                                                            setPaymentMethod('metamask');
+                                                        }}
+                                                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '137' && paymentMethod === 'metamask' ? 'bg-purple-600 text-white border-purple-600' : 'text-gray-400 border-gray-700'}`}
+                                                    >
+                                                        Polygon
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setPaymentNetworkId('56');
+                                                            setPaymentMethod('metamask');
+                                                        }}
+                                                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '56' && paymentMethod === 'metamask' ? 'text-yellow-500 border-yellow-500' : 'text-gray-400 border-gray-700'}`}
+                                                    >
+                                                        BSC
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setPaymentNetworkId('1');
+                                                            setPaymentMethod('metamask');
+                                                        }}
+                                                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-all ${paymentNetworkId === '1' && paymentMethod === 'metamask' ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-400 border-gray-700'}`}
+                                                    >
+                                                        Ethereum
+                                                    </button>
+                                                </>
                                             ) : (
                                                 <>
                                                     <button
@@ -1127,7 +1170,7 @@ const Home = () => {
 
                         {mode === 'sell' && !isTreasurySolvent && (
                             <div className="mt-3 bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold p-3 rounded-xl text-center">
-                                Insufficient Treasury Liquidity. Max Sell: {treasuryUsdtBalance?.toFixed(2)} USDT
+                                Insufficient Treasury Liquidity on {paymentNetworkId === '137' ? 'Polygon' : paymentNetworkId === '56' ? 'BSC' : 'Ethereum'}. Available: {treasuryUsdtBalance?.toFixed(2) || '0.00'} USDT
                             </div>
                         )}
                     </div>

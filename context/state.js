@@ -42,22 +42,50 @@ export function AppWrapper({ children }) {
 
   // ... (previous state variables)
 
-  // Fetch Treasury USDT Balance (Polygon)
-  const fetchTreasuryBalance = async () => {
+  // Fetch Treasury USDT Balance on the selected payout network
+  const fetchTreasuryBalance = async (networkId = '137') => {
+    // Immediately reset to 0 to block sell button while fetching
+    setTreasuryUsdtBalance(0);
     try {
-      const web3Polygon = new Web3("https://polygon-rpc.com/");
-      const USDT_CONTRACT_ADDR = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"; // Polygon USDT
-      const ERC20_ABI = require("@config/abi/erc20.json");
+      const RPC_URLS = {
+        '137': 'https://polygon-rpc.com/',
+        '56': 'https://bsc-dataseed.binance.org',
+        '1': 'https://cloudflare-eth.com'
+      };
+      const USDT_CONTRACTS = {
+        '137': '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
+        '56': '0x55d398326f99059fF775485246999027B3197955',
+        '1': '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+      };
 
-      const contract = new web3Polygon.eth.Contract(ERC20_ABI, USDT_CONTRACT_ADDR);
-      // Assuming USDT_RECEIVER_ADDRESS is the Treasury
+      const rpc = RPC_URLS[networkId] || RPC_URLS['137'];
+      const usdtAddr = USDT_CONTRACTS[networkId] || USDT_CONTRACTS['137'];
+
+      const web3Net = new Web3(rpc);
+      const DECIMALS_ABI = [
+        { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" },
+        { "constant": true, "inputs": [{ "name": "_owner", "type": "address" }], "name": "balanceOf", "outputs": [{ "name": "balance", "type": "uint256" }], "type": "function" }
+      ];
+
+      const contract = new web3Net.eth.Contract(DECIMALS_ABI, usdtAddr);
       const rawBalance = await contract.methods.balanceOf(USDT_RECEIVER_ADDRESS).call();
-      const formatted = web3Polygon.utils.fromWei(rawBalance, 'mwei'); // USDT has 6 decimals
+
+      // Query actual decimals to format correctly
+      let decimals = 6;
+      try {
+        decimals = Number(await contract.methods.decimals().call());
+      } catch (e) { /* fallback 6 */ }
+
+      // Convert raw balance to human-readable
+      const formatted = decimals === 18
+        ? web3Net.utils.fromWei(rawBalance, 'ether')
+        : web3Net.utils.fromWei(rawBalance, 'mwei'); // 6 decimals
 
       setTreasuryUsdtBalance(parseFloat(formatted));
-      console.log("Treasury Balance:", formatted);
+      console.log(`Treasury USDT Balance on ${networkId}: ${formatted}`);
     } catch (e) {
       console.error("Error fetching treasury balance:", e);
+      setTreasuryUsdtBalance(0);
     }
   };
 
@@ -97,8 +125,9 @@ export function AppWrapper({ children }) {
       setWeb3(web3Provider);
       setAccounts(accounts);
 
-      // Also fetch Treasury Balance (New Logic)
-      fetchTreasuryBalance();
+      // Treasury balance is fetched by useEffect in index.tsx based on paymentNetworkId
+      // Do NOT call fetchTreasuryBalance here — connectWallet is called from MetaMask
+      // event listeners without the payout network context, which would overwrite the balance.
 
     } catch (error) {
       console.error("connectWallet error:", error);
@@ -596,7 +625,8 @@ export function AppWrapper({ children }) {
     txHash,
     txReceipt,
     switchNetwork,
-    treasuryUsdtBalance
+    treasuryUsdtBalance,
+    fetchTreasuryBalance
   };
 
   return (
