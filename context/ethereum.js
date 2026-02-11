@@ -54,9 +54,10 @@ export const switchNetwork = async (chainId) => {
   if (!window.ethereum) return;
 
   let params;
-  if (chainId === OG_PARAMS.chainId) params = OG_PARAMS;
+  if (chainId === OG_PARAMS.chainId || chainId === "8532") params = OG_PARAMS;
   else if (chainId === "0x38" || chainId === "56") params = BSC_PARAMS;
   else if (chainId === "0x1" || chainId === "1") params = ETH_PARAMS;
+  else if (chainId === "0x89" || chainId === "137") params = POLYGON_PARAMS;
   else params = POLYGON_PARAMS; // Default to Polygon
 
   try {

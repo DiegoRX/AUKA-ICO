@@ -194,55 +194,139 @@ export function AppWrapper({ children }) {
   const buyToken = async (data) => {
     const { usdtAmount, usdtAddress, tokenName, tokenAmount, network, networkId, tokenReceiverAddress, providerUrl } = data;
 
-    // Always switch to the network where USDT exists (Polygon 137) for buying
-    if (networkId) await switchNetwork(networkId);
+    // Switch to the network where USDT exists (Polygon 137, BSC 56, ETH 1)
+    if (networkId) {
+      try {
+        await switchNetwork(networkId);
+      } catch (e) {
+        console.error("Switch network failed", e);
+        Swal.fire({
+          title: "Network Switch Failed",
+          text: "Please manually switch to the correct network in your wallet.",
+          icon: "error",
+          background: '#1E2329',
+          color: '#ffffff',
+          confirmButtonColor: '#fcd436'
+        });
+        return;
+      }
+    }
 
     if (isNaN(usdtAmount) || isNaN(tokenAmount)) {
       console.error("Invalid input: usdtAmount or tokenAmount is not a number");
       return;
     }
 
-    // Fix floating point issues by ensuring integer string
-    let weiUSDTValue = Math.floor(Number(usdtAmount) * 10 ** 6).toString();
-    // Assuming all tokens (AUKA, ORIGEN, USDK) have 18 decimals
-    let weiTokenValue = (Number(tokenAmount) * 10 ** 18).toString(); // Only for backend record
+    let web3Temp = new Web3(); // For utility functions
+    // Tokens have 18 decimals — use toWei for precision
+    let weiTokenValue = web3Temp.utils.toWei(String(tokenAmount), 'ether');
 
-    let ERC20_ABI = require("@config/abi/erc20.json");
+    // ABI with transfer (no outputs — safe for ETH USDT) + decimals (to query actual decimals)
+    const SAFE_USDT_ABI = [
+      {
+        "constant": false,
+        "inputs": [
+          { "name": "_to", "type": "address" },
+          { "name": "_value", "type": "uint256" }
+        ],
+        "name": "transfer",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "constant": true,
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [{ "name": "", "type": "uint8" }],
+        "stateMutability": "view",
+        "type": "function"
+      }
+    ];
+
     let provider = await detectEthereumProvider();
 
     if (provider) {
       const web3Provider = new Web3(window.ethereum);
-      let USDTContract = new web3Provider.eth.Contract(
-        ERC20_ABI,
-        usdtAddress
-      );
+      let USDTContract = new web3Provider.eth.Contract(SAFE_USDT_ABI, usdtAddress);
 
-      // Estimate gas to avoid "out of gas" or "likely to fail" errors
-      let estimatedGas;
+      // Query actual decimals from the contract (6 on Polygon/ETH, 18 on BSC)
+      let tokenDecimals = 6; // fallback
+      try {
+        tokenDecimals = Number(await USDTContract.methods.decimals().call());
+        console.log(`USDT decimals on this network: ${tokenDecimals}`);
+      } catch (e) {
+        console.warn("Could not query decimals(), defaulting to 6", e);
+      }
+
+      // Calculate the raw amount using the actual decimals
+      let weiUSDTValue;
+      if (tokenDecimals <= 15) {
+        weiUSDTValue = Math.floor(Number(usdtAmount) * 10 ** tokenDecimals).toString();
+      } else {
+        // For 18+ decimals, use BigInt to avoid JS floating point issues
+        weiUSDTValue = (BigInt(Math.floor(Number(usdtAmount) * 10 ** 6)) * BigInt(10 ** (tokenDecimals - 6))).toString();
+      }
+      console.log(`weiUSDTValue: ${weiUSDTValue} (${tokenDecimals} decimals)`);
+
+
+      // --- Gas Price with per-network minimums ---
       let gasPrice;
       try {
         gasPrice = await web3Provider.eth.getGasPrice();
-        estimatedGas = await USDTContract.methods.transfer(USDT_RECEIVER_ADDRESS, weiUSDTValue).estimateGas({
-          from: walletAddress[0],
-          value: '0x0'
-        });
-        // Add 20% buffer
-        estimatedGas = Math.floor(Number(estimatedGas) * 1.2).toString();
+        console.log("Fetched Gas Price (wei):", gasPrice);
+
+        const chainId = await web3Provider.eth.getChainId();
+        console.log("Current Chain ID:", chainId);
+
+        // BSC needs >= 3 Gwei
+        if (String(chainId) === '56') {
+          const minGas = web3Temp.utils.toWei('3', 'gwei');
+          if (BigInt(gasPrice) < BigInt(minGas)) {
+            console.log("Boosting BSC gas to 3 Gwei");
+            gasPrice = minGas;
+          }
+        }
+        // Polygon needs >= 30 Gwei
+        else if (String(chainId) === '137') {
+          const minGas = web3Temp.utils.toWei('30', 'gwei');
+          if (BigInt(gasPrice) < BigInt(minGas)) {
+            console.log("Boosting Polygon gas to 30 Gwei");
+            gasPrice = minGas;
+          }
+        }
+        // Ethereum: dynamic pricing, no minimum needed
       } catch (e) {
-        console.warn("Gas estimation failed, using default", e);
-        estimatedGas = '200000'; // Increased safe default
-        // If gasPrice fetch failed, let provider decide
+        console.warn("Gas price fetch failed, letting provider decide", e);
         gasPrice = undefined;
       }
 
-      // Sending USDT to Treasury
+      // --- Gas Estimation ---
+      let estimatedGas;
+      try {
+        estimatedGas = await USDTContract.methods.transfer(USDT_RECEIVER_ADDRESS, weiUSDTValue).estimateGas({
+          from: walletAddress[0]
+        });
+        // Add 20% buffer
+        estimatedGas = Math.floor(Number(estimatedGas) * 1.2).toString();
+        console.log("Estimated Gas:", estimatedGas);
+      } catch (e) {
+        console.warn("Gas estimation failed, using safe default:", e);
+        estimatedGas = '100000';
+      }
+
+      // --- Build tx params ---
       const txParams = {
         from: walletAddress[0],
-        type: '0x0',
+        type: '0x0', // Legacy tx type (works on all networks)
         gas: estimatedGas
       };
       if (gasPrice) txParams.gasPrice = gasPrice;
 
+      console.log("Sending Buy TX:", { to: USDT_RECEIVER_ADDRESS, value: weiUSDTValue, ...txParams });
+
+      // --- Send Transaction ---
       USDTContract.methods
         .transfer(USDT_RECEIVER_ADDRESS, weiUSDTValue)
         .send(txParams)
@@ -279,24 +363,25 @@ export function AppWrapper({ children }) {
             color: '#ffffff',
             confirmButtonColor: '#fcd436'
           });
-
           setTxPending(false);
-          // Refresh balances
           connectWallet();
         })
-        .catch((revertReason) => {
-          console.error("Transaction Error:", revertReason);
+        .on("error", function (error) {
+          console.error("Buy Transaction Error:", error);
+          const errorString = String(error.message || error).toLowerCase();
+
           let title = "Transaction Failed";
           let msg = "An error occurred during the transaction. Please try again.";
 
-          // Check for common errors
-          const errorString = String(revertReason).toLowerCase();
-          if (errorString.includes("insufficient funds") || errorString.includes("gas required exceeds allowance")) {
-            title = "Insufficient Funds (Gas)";
-            msg = "You do not have enough POL/MATIC to pay for the gas fees. Please deposit POL and try again.";
+          if (errorString.includes("insufficient funds") || errorString.includes("gas required exceeds")) {
+            title = "Insufficient Funds";
+            msg = "You do not have enough native tokens to pay gas fees.";
           } else if (errorString.includes("user denied") || errorString.includes("rejected")) {
             title = "Transaction Rejected";
             msg = "You rejected the transaction in MetaMask.";
+          } else if (errorString.includes("internal json-rpc")) {
+            title = "Network Error";
+            msg = "RPC error. Try increasing gas price manually in MetaMask.";
           }
 
           Swal.fire({
@@ -308,7 +393,10 @@ export function AppWrapper({ children }) {
             confirmButtonColor: '#fcd436'
           });
           setTxPending(false);
+          connectWallet();
         });
+    } else {
+      console.error("No Ethereum provider detected");
     }
   };
 
