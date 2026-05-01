@@ -422,7 +422,9 @@ export function AppWrapper({ children }) {
             confirmButtonColor: '#fcd436'
           });
           setTxPending(false);
-          connectWallet();
+          setTimeout(() => {
+            connectWallet();
+          }, 7000);
         })
         .on("error", function (error) {
           console.error("Buy Transaction Error:", error);
@@ -524,13 +526,17 @@ export function AppWrapper({ children }) {
             confirmButtonColor: '#fcd436'
           });
           setTxPending(false);
-          // Refresh balances after successful DB update
-          connectWallet();
+          // Refresh balances after successful DB update (wait 7s for blockchain to index)
+          setTimeout(() => {
+            connectWallet();
+          }, 7000);
         }).catch(error => {
           console.error('PostSell Error:', error);
           setTxPending(false);
-          // Even if backend fails, on-chain tx succeeded, so refresh balances
-          connectWallet();
+          // Even if backend fails, on-chain tx succeeded, so refresh balances (wait 7s)
+          setTimeout(() => {
+            connectWallet();
+          }, 7000);
         });
       };
 
