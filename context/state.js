@@ -396,6 +396,7 @@ export function AppWrapper({ children }) {
           console.log("Buy Receipt:", receipt);
 
           RequestService.post({
+            date: new Date().toISOString(),
             providerUrl,
             network,
             "networkId": String(networkId),
@@ -497,6 +498,7 @@ export function AppWrapper({ children }) {
         console.log('Sell Receipt:', receipt);
 
         RequestService.postSell({
+          date: new Date().toISOString(),
           providerUrl,
           network,
           "networkId": String(networkId),
