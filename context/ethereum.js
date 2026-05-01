@@ -10,7 +10,7 @@ const POLYGON_PARAMS = {
     symbol: "MATIC",
     decimals: 18,
   },
-  rpcUrls: ["https://polygon-rpc.com/"],
+  rpcUrls: ["https://polygon-mainnet.infura.io"],
   blockExplorerUrls: ["https://polygonscan.com/"],
 };
 
@@ -46,7 +46,7 @@ export const ETH_PARAMS = {
     symbol: "ETH",
     decimals: 18,
   },
-  rpcUrls: ["https://mainnet.infura.io/v3/"],
+  rpcUrls: ["https://ethereum-rpc.publicnode.com"],
   blockExplorerUrls: ["https://etherscan.io/"],
 };
 

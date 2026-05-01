@@ -6,6 +6,8 @@ import Web3 from "web3";
 
 import Swal from 'sweetalert2'
 import RequestService from '@context/axios';
+import { calculateWeiUSDTValue } from '../utils/math-pure';
+import { getGasParamsForChain } from '../utils/math';
 
 const AppContext = createContext();
 
@@ -51,7 +53,7 @@ export function AppWrapper({ children }) {
     setTreasuryUsdtBalance(0);
     try {
       const RPC_URLS = {
-        '137': 'https://polygon-bor-rpc.publicnode.com',
+        '137': 'https://polygon-mainnet.infura.io',
         '56': 'https://bsc-dataseed.binance.org',
         '1': 'https://ethereum-rpc.publicnode.com'
       };
@@ -362,13 +364,7 @@ export function AppWrapper({ children }) {
       }
 
       // Calculate the raw amount using the actual decimals
-      let weiUSDTValue;
-      if (tokenDecimals <= 15) {
-        weiUSDTValue = Math.floor(Number(usdtAmount) * 10 ** tokenDecimals).toString();
-      } else {
-        // For 18+ decimals, use BigInt to avoid JS floating point issues
-        weiUSDTValue = (BigInt(Math.floor(Number(usdtAmount) * 10 ** 6)) * BigInt(10 ** (tokenDecimals - 6))).toString();
-      }
+      const weiUSDTValue = calculateWeiUSDTValue(usdtAmount, tokenDecimals);
       console.log(`weiUSDTValue: ${weiUSDTValue} (${tokenDecimals} decimals)`);
 
       // --- Gas params: per-network strategy (legacy vs EIP-1559) ---

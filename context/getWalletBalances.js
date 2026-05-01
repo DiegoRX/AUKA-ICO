@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import detectEthereumProvider from "@metamask/detect-provider";
 
-const POLYGON_RPC = 'https://polygon-mainnet.g.alchemy.com/v2/FmIzG8DTVK5aZZPJFzmLFNPWcuLF5ZXs';
+const POLYGON_RPC = 'https://polygon-mainnet.infura.io';
 const OG_RPC = 'https://rpc.ordenglobal-rpc.com';
 
 const USDT_ADDRESSES = {

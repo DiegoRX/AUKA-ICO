@@ -596,12 +596,40 @@ const Home = () => {
         }
     };
 
-    // --- RESTORED COMPONENTS ---
+    // --- NETWORK SWITCH LOGIC (PROACTIVE) ---
+    const handleModeSelection = async (newMode: 'buy' | 'sell') => {
+        setMode(newMode);
+        if (walletAddress && walletAddress.length > 0) {
+            if (newMode === 'buy') {
+                // Return to Payment Network (usually Polygon)
+                await handleSwitchToPolygon();
+            } else {
+                // Switch to the network appropriate for the selected token in SELL mode
+                if (selectedToken.symbol === 'ORIGEN') {
+                    await handleSwitchToOrdenGlobal();
+                } else {
+                    await handleSwitchToPolygon();
+                }
+            }
+        }
+    };
+
+    const handleTokenSelection = async (token: typeof AVAILABLE_TOKENS[0]) => {
+        setSelectedToken(token);
+        if (mode === 'sell' && walletAddress && walletAddress.length > 0) {
+            if (token.symbol === 'ORIGEN') {
+                await handleSwitchToOrdenGlobal();
+            } else {
+                await handleSwitchToPolygon();
+            }
+        }
+    };
+
     // Buy/Sell Switch Component
     const BuySellSwitch = () => (
         <div className="bg-black/40 p-1.5 rounded-2xl flex mb-8">
             <button
-                onClick={() => setMode('buy')}
+                onClick={() => handleModeSelection('buy')}
                 className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${mode === 'buy'
                     ? 'bg-[#1E2329] shadow-sm text-white'
                     : 'text-gray-400 hover:text-gray-200'
@@ -610,7 +638,7 @@ const Home = () => {
                 Buy
             </button>
             <button
-                onClick={() => setMode('sell')}
+                onClick={() => handleModeSelection('sell')}
                 className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${mode === 'sell'
                     ? 'bg-[#1E2329] shadow-sm text-white'
                     : 'text-gray-400 hover:text-gray-200'
@@ -647,7 +675,7 @@ const Home = () => {
                         <div
                             key={token.symbol}
                             onClick={() => {
-                                setSelectedToken(token);
+                                handleTokenSelection(token);
                                 setShowTokenSelector(false);
                             }}
                             className={`flex items-center space-x-3 p-3 cursor-pointer hover:bg-gray-800 transition-colors ${selectedToken.symbol === token.symbol ? 'bg-gray-800' : ''
@@ -983,7 +1011,7 @@ const Home = () => {
                             {/* Swap Button */}
                             <div className="flex justify-center -my-3 relative z-10">
                                 <button
-                                    onClick={() => setMode(mode === 'buy' ? 'sell' : 'buy')}
+                                    onClick={() => handleModeSelection(mode === 'buy' ? 'sell' : 'buy')}
                                     className="bg-[#1E2329] p-2.5 rounded-full shadow-xl text-[#fcd436] hover:rotate-180 transition-transform duration-500 hover:text-white"
                                 >
                                     <MdSwapVert className="text-2xl" />
