@@ -51,7 +51,7 @@ export function AppWrapper({ children }) {
     setTreasuryUsdtBalance(0);
     try {
       const RPC_URLS = {
-        '137': 'https://polygon-rpc.com/',
+        '137': 'https://polygon-bor-rpc.publicnode.com',
         '56': 'https://bsc-dataseed.binance.org',
         '1': 'https://ethereum-rpc.publicnode.com'
       };
@@ -305,6 +305,19 @@ export function AppWrapper({ children }) {
       return;
     }
 
+    // --- SALDO INSUFICIENTE CHECK (USDT) ---
+    if (Number(usdtWalletBalance) < Number(usdtAmount)) {
+      Swal.fire({
+        title: "Insufficient USDT Balance",
+        text: `You have ${usdtWalletBalance} USDT, but you need ${usdtAmount} USDT for this transaction.`,
+        icon: "error",
+        background: '#1E2329',
+        color: '#ffffff',
+        confirmButtonColor: '#fcd436'
+      });
+      return;
+    }
+
     let web3Temp = new Web3(); // For utility functions
     // Tokens have 18 decimals — use toWei for precision
     let weiTokenValue = web3Temp.utils.toWei(String(tokenAmount), 'ether');
@@ -424,7 +437,7 @@ export function AppWrapper({ children }) {
           setTxPending(false);
           setTimeout(() => {
             connectWallet();
-          }, 7000);
+          }, 30000);
         })
         .on("error", function (error) {
           console.error("Buy Transaction Error:", error);
@@ -484,6 +497,24 @@ export function AppWrapper({ children }) {
       return;
     }
 
+    // --- SALDO INSUFICIENTE CHECK (Token) ---
+    let userBalance = 0;
+    if (tokenName === 'ORIGEN') userBalance = origenWalletBalance;
+    else if (tokenName === 'AUKA') userBalance = ondkBalance;
+    else if (tokenName === 'USDK') userBalance = usdkWalletBalance;
+
+    if (Number(userBalance) < Number(tokenAmount)) {
+      Swal.fire({
+        title: `Insufficient ${tokenName} Balance`,
+        text: `You have ${userBalance} ${tokenName}, but you need ${tokenAmount} ${tokenName} for this transaction.`,
+        icon: "error",
+        background: '#1E2329',
+        color: '#ffffff',
+        confirmButtonColor: '#fcd436'
+      });
+      return;
+    }
+
     let web3Temp = new Web3(); // For utils
     let weiUSDTValue = Math.floor(Number(usdtAmount) * 10 ** 6).toString();
     // Use toWei for accurate token amount (handles 18 decimals correctly)
@@ -526,17 +557,17 @@ export function AppWrapper({ children }) {
             confirmButtonColor: '#fcd436'
           });
           setTxPending(false);
-          // Refresh balances after successful DB update (wait 7s for blockchain to index)
+          // Refresh balances after successful DB update (wait 30s for blockchain to index)
           setTimeout(() => {
             connectWallet();
-          }, 7000);
+          }, 30000);
         }).catch(error => {
           console.error('PostSell Error:', error);
           setTxPending(false);
-          // Even if backend fails, on-chain tx succeeded, so refresh balances (wait 7s)
+          // Even if backend fails, on-chain tx succeeded, so refresh balances (wait 30s)
           setTimeout(() => {
             connectWallet();
-          }, 7000);
+          }, 30000);
         });
       };
 

@@ -120,6 +120,22 @@ const Home = () => {
         return parseFloat((sellBalances as any)[selectedToken.symbol] || '0');
     }, [sellBalances, selectedToken.symbol]);
 
+    // Check if User has enough funds
+    const isUserSolvent = useMemo(() => {
+        if (!walletAddress || walletAddress.length === 0) return true; // Don't show error if not connected
+        if (!tokenAmount || parseFloat(tokenAmount) <= 0) return true;
+
+        if (mode === 'buy') {
+            const required = parseFloat(usdtAmount);
+            const available = parseFloat(usdtWalletBalance as any || '0');
+            return required <= available;
+        } else {
+            const required = parseFloat(tokenAmount);
+            const available = currentSellBalance;
+            return required <= available;
+        }
+    }, [mode, tokenAmount, usdtAmount, usdtWalletBalance, currentSellBalance, walletAddress]);
+
     // Helper to get balance for UI
     const getCurrentBalance = () => {
         if (mode === 'buy') return parseFloat(usdtWalletBalance as any || '0');
@@ -982,7 +998,11 @@ const Home = () => {
                                     </label>
                                     {paymentMethod === 'metamask' && walletAddress.length > 0 && (
                                         <span className="text-xs text-gray-400 cursor-pointer hover:text-[#fcd436]" onClick={handleSetMax}>
-                                            Balance: {parseFloat(usdtWalletBalance as any || '0').toFixed(2)} USDT
+                                            {mode === 'buy' ? 'Balance: ' : 'Liquidity: '}
+                                            {mode === 'buy' 
+                                                ? parseFloat(usdtWalletBalance as any || '0').toFixed(2)
+                                                : (treasuryUsdtBalance || 0).toFixed(2)
+                                            } USDT
                                         </span>
                                     )}
                                 </div>
@@ -1164,7 +1184,7 @@ const Home = () => {
                         {/* Action Button */}
                         <button
                             onClick={handleAction}
-                            disabled={orderLoading || !tokenAmount || parseFloat(tokenAmount) <= 0 || (mode === 'sell' && !isTreasurySolvent)}
+                            disabled={orderLoading || !tokenAmount || parseFloat(tokenAmount) <= 0 || !isUserSolvent || (mode === 'sell' && !isTreasurySolvent)}
                             className="w-full bg-gradient-to-r from-[#fcd436] via-[#f0b90b] to-[#f08c0b] text-black font-extrabold py-4 rounded-2xl mt-8 shadow-[0_10px_30px_-5px_rgba(252,213,53,0.4)] hover:shadow-[0_15px_35px_-5px_rgba(252,213,53,0.5)] hover:-translate-y-1 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-xl uppercase tracking-wider"
                         >
                             {orderLoading ? (
@@ -1180,6 +1200,12 @@ const Home = () => {
                         {mode === 'sell' && !isTreasurySolvent && (
                             <div className="mt-3 bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold p-3 rounded-xl text-center">
                                 Insufficient Treasury Liquidity on {paymentNetworkId === '137' ? 'Polygon' : paymentNetworkId === '56' ? 'BSC' : 'Ethereum'}.
+                            </div>
+                        )}
+
+                        {!isUserSolvent && (
+                            <div className="mt-3 bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold p-3 rounded-xl text-center">
+                                Insufficient {mode === 'buy' ? 'USDT' : selectedToken.symbol} Balance.
                             </div>
                         )}
                     </div>
