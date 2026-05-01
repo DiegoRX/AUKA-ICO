@@ -14,7 +14,7 @@ const AUKA_ADDRESS = '0x6Facc8Df79cEDc6C5065442ce27e915Aa3a26B9B';
 const USDK_ADDRESS = "0xAEaB7Fa98c972e0746471d57F7b5b3538B0aF716";
 const ERC20_ABI = require("@config/abi/erc20.json");
 
-const getWalletBalances = (chainId, userAddress) =>
+const getWalletBalances = (chainId, userAddress, paymentNetworkId = null) =>
   new Promise(async (resolve) => {
     try {
       const provider = await detectEthereumProvider();
@@ -59,23 +59,31 @@ const getWalletBalances = (chainId, userAddress) =>
       } catch (e) { console.error("Error fetching AUKA balance:", e); }
 
       // 3. User USDT Balance (Multi-chain via RPC)
-      // If on Orden Global, always fetch Polygon USDT because that's where they receive payments
+      // Priority: paymentNetworkId (explicit sell payout network) > MetaMask chainId
+      // When on Orden Global (8532) or no match, default to Polygon USDT (sell payout)
       let balanceUSDT = 0;
-      if (activeAddress && decimalChainId) {
+      if (activeAddress) {
         try {
           let usdtAddress, rpcProvider, decimals;
 
-          // If on Orden Global (8532), fetch Polygon USDT instead
-          if (decimalChainId === '8532') {
-            usdtAddress = USDT_ADDRESSES['137']; // Polygon USDT
-            rpcProvider = polygonProvider;
-            decimals = 6;
-          } else if (USDT_ADDRESSES[decimalChainId]) {
-            usdtAddress = USDT_ADDRESSES[decimalChainId];
-            rpcProvider = polygonProvider;
-            if (decimalChainId === '56') rpcProvider = bscProvider;
-            else if (decimalChainId === '1') rpcProvider = ethProvider;
-            decimals = decimalChainId === '137' || decimalChainId === '1' ? 6 : 18; // USDT is 6 on Poly/ETH, 18 on BSC (Bridged)
+          // Determine which network to read USDT from:
+          // 1. Use explicit paymentNetworkId if provided (sell mode passes '137', '56', etc.)
+          // 2. If MetaMask is on Orden Global (8532), always read Polygon USDT
+          // 3. Otherwise use the MetaMask chainId
+          const targetNetworkId = paymentNetworkId || (decimalChainId === '8532' ? '137' : decimalChainId);
+
+          if (USDT_ADDRESSES[targetNetworkId]) {
+            usdtAddress = USDT_ADDRESSES[targetNetworkId];
+            if (targetNetworkId === '56') {
+              rpcProvider = bscProvider;
+              decimals = 18; // BSC USDT has 18 decimals (bridged)
+            } else if (targetNetworkId === '1') {
+              rpcProvider = ethProvider;
+              decimals = 6;
+            } else {
+              rpcProvider = polygonProvider; // Default: Polygon
+              decimals = 6;
+            }
           }
 
           if (usdtAddress) {

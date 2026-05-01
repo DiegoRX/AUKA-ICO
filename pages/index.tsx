@@ -153,13 +153,21 @@ const Home = () => {
     }, [orderPolling, currentOrder?.orderId, paymentMethod, walletAddress]);
 
     // Update balances when payment network or wallet changes
+    // In sell mode, MetaMask is on Orden Global (8532) but USDT is read from paymentNetworkId (Polygon/BSC/ETH)
+    // Pass paymentNetworkId as 2nd arg so getWalletBalances reads USDT from the correct payout network
     useEffect(() => {
         if (paymentMethod === 'metamask' && walletAddress.length > 0) {
-            connectWallet(paymentNetworkId);
+            if (mode === 'sell') {
+                // Sell mode: MetaMask on Orden Global, USDT payout on paymentNetworkId
+                connectWallet(null, paymentNetworkId);
+            } else {
+                // Buy mode: MetaMask network = USDT payment network
+                connectWallet(paymentNetworkId);
+            }
         }
         // Removing walletAddress from dependencies to prevent infinite loop
         // connectWallet updates walletAddress, which triggers this effect again
-    }, [paymentNetworkId, paymentMethod]);
+    }, [paymentNetworkId, paymentMethod, mode]);
 
     // Fetch treasury balance on the selected payout network
     // Runs on network change and mode change — needed for sell mode validation

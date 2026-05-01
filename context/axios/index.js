@@ -11,7 +11,9 @@ class RequestService {
 
   async post(data) {
     try {
-      const resp = await axios.post(`${this.urlServer}`, data, {});
+      const resp = await axios.post(`${this.urlServer}`, data, {
+        headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || 'ico-secure-key-2026' }
+      });
       return this.switchCase(resp);
     } catch (error) {
       return this.switchCase(error.request);
@@ -21,7 +23,9 @@ class RequestService {
   async postSell(data) {
     console.log('Entrando a postSell con data:', data); // Log inicial
     try {
-      const resp = await axios.post(`${this.urlServer}/sell`, data, {});
+      const resp = await axios.post(`${this.urlServer}/sell`, data, {
+        headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || 'ico-secure-key-2026' }
+      });
       console.log('Respuesta de axios postSell:', resp); // Log de la respuesta
       return this.switchCase(resp);
     } catch (error) {

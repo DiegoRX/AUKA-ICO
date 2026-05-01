@@ -92,7 +92,7 @@ export function AppWrapper({ children }) {
     }
   };
 
-  const connectWallet = async (preferredChainId = null) => {
+  const connectWallet = async (preferredChainId = null, usdtPayoutNetworkId = null) => {
     try {
       const {
         currentChainId,
@@ -116,7 +116,7 @@ export function AppWrapper({ children }) {
         OGUSDTBalance,
         balanceUSDK,
         OGbalanceUSDK,
-      } = await getWalletBalances(targetChainId, accounts[0]);
+      } = await getWalletBalances(targetChainId, accounts[0], usdtPayoutNetworkId);
 
       setOGUSDTBalance(OGUSDTBalance);
       setOGbalanceORIGEN(OGbalanceORIGEN);
