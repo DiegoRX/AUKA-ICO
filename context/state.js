@@ -235,7 +235,7 @@ export function AppWrapper({ children }) {
     if (LEGACY_CHAINS.includes(chainStr)) {
       // Legacy transaction model: only gasPrice
       let gasPrice = await web3Provider.eth.getGasPrice();
-      const minimums = { '56': '3', '8532': '10' }; // Gwei
+      const minimums = { '56': '1', '8532': '10' }; // Gwei (BSC 1, OG 10)
       const minGwei = minimums[chainStr];
       if (minGwei) {
         const minWei = web3Util.utils.toWei(minGwei, 'gwei');
