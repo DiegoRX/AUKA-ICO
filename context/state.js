@@ -53,7 +53,7 @@ export function AppWrapper({ children }) {
       const RPC_URLS = {
         '137': 'https://polygon-rpc.com/',
         '56': 'https://bsc-dataseed.binance.org',
-        '1': 'https://eth.llamarpc.com'
+        '1': 'https://ethereum-rpc.publicnode.com'
       };
       const USDT_CONTRACTS = {
         '137': '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
