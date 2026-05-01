@@ -39,7 +39,7 @@ const getWalletBalances = (chainId, userAddress, paymentNetworkId = null) =>
       const polygonProvider = new ethers.JsonRpcProvider(POLYGON_RPC);
       const ogProvider = new ethers.JsonRpcProvider(OG_RPC);
       const bscProvider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org/');
-      const ethProvider = new ethers.JsonRpcProvider('https://cloudflare-eth.com');
+      const ethProvider = new ethers.JsonRpcProvider('https://eth.llamarpc.com');
 
       // 1. ORIGEN Balance (Native Coin on OG Network)
       let balanceORIGEN = 0;
