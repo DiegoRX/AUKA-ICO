@@ -94,16 +94,15 @@ const Hero = ({ address, setShowModal }) => {
 
     const [selectedToken, setSelectedToken] = useState("ORIGEN");
     const [selectedNetwork, setSelectedNetwork] = useState({
-        "providerUrl": "polygon-mainnet.infura.io",
+        "providerUrl": "https://polygon-mainnet.g.alchemy.com/v2/q9YfSqOd5vXRKXfTROwrVmV4g7K5dazb",
         "network": "Polygon Mainnet",
         "networkId": "137",
-        "networkIdHex": "0x38",
+        "networkIdHex": "0x89",
         "usdtAddress": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
     });
     // --- CONTEXTO DE LA APP ---
     // Importamos las funciones y saldos del contexto global
     const {
-        connectWallet,
         walletAddress,
         transferAUKA,
         buyORIGEN,
@@ -121,8 +120,28 @@ const Hero = ({ address, setShowModal }) => {
         OGbalanceUSDK,
         buyUSDK,
         usdkWalletBalance,
-        sellUSDK
+        sellUSDK,
+        switchNetwork,
+        connectWallet
     } = useAppContext();
+
+    const handleSwitchToPolygon = async () => {
+        try {
+            await switchNetwork('0x89');
+            connectWallet('137');
+        } catch (e) {
+            console.error("Error switching to Polygon:", e);
+        }
+    };
+
+    const handleSwitchToOrdenGlobal = async () => {
+        try {
+            await switchNetwork('0x2154');
+            connectWallet('8532');
+        } catch (e) {
+            console.error("Error switching to Orden Global:", e);
+        }
+    };
 
     // --- LÓGICA DE PRECIOS ---
     const tokenPrices = {
@@ -265,13 +284,63 @@ const Hero = ({ address, setShowModal }) => {
         }
     };
 
+    const handleModeSelection = async (newMode) => {
+        setMode(newMode);
+        if (walletAddress && walletAddress.length > 0) {
+            if (newMode === 'buy') {
+                Swal.fire({
+                    title: "Switching to BUY mode",
+                    text: "Preparing Payment Network (Polygon). Please accept any network switch request.",
+                    icon: "info",
+                    timer: 2500,
+                    showConfirmButton: false,
+                    background: '#1E2329',
+                    color: '#ffffff',
+                    customClass: {
+                        popup: 'border-none rounded-[24px]'
+                    }
+                });
+                await handleSwitchToPolygon();
+            } else {
+                Swal.fire({
+                    title: "Switching to SELL mode",
+                    text: "Preparing Orden Global Network. Please accept any network switch request.",
+                    icon: "info",
+                    timer: 2500,
+                    showConfirmButton: false,
+                    background: '#1E2329',
+                    color: '#ffffff',
+                    customClass: {
+                        popup: 'border-none rounded-[24px]'
+                    }
+                });
+                // Proactive switch based on selected token
+                if (selectedToken === 'ORIGEN') {
+                    await handleSwitchToOrdenGlobal();
+                } else {
+                    await handleSwitchToPolygon();
+                }
+            }
+        }
+    };
+
     // Resetea los campos cuando cambia el token
-    const handleTokenSelectionChange = (e) => {
-        setSelectedToken(e.target.value);
+    const handleTokenSelectionChange = async (e) => {
+        const newToken = e.target.value;
+        setSelectedToken(newToken);
         setBuyUsdtAmount("");
         setBuyTokenAmount("");
         setSellTokenAmount("");
         setSellUSDTAmount("");
+
+        // Proactive network switch on token change in SELL mode
+        if (mode === 'sell' && walletAddress && walletAddress.length > 0) {
+            if (newToken === 'ORIGEN') {
+                await handleSwitchToOrdenGlobal();
+            } else {
+                await handleSwitchToPolygon();
+            }
+        }
     };
 
     // --- FUNCIONES DE TRANSACCIÓN ---
@@ -424,19 +493,6 @@ const Hero = ({ address, setShowModal }) => {
         [],
     );
 
-    const handleSwitchToPolygon = () => {
-        console.log("Intentando cambiar a Polygon...");
-        switchOrAddNetwork(polygonNetworkConfig);
-        setCurrentChainId(polygonNetworkConfig.chainId)
-        console.log(currentChainId)
-    };
-
-    const handleSwitchToOrdenGlobal = () => {
-        console.log("Intentando cambiar a Orden Global...");
-        switchOrAddNetwork(ordenGlobalNetworkConfig);
-        setCurrentChainId(ordenGlobalNetworkConfig.chainId)
-        console.log(currentChainId)
-    };
     useEffect(() => {
         const { ethereum } = window;
 
@@ -488,7 +544,7 @@ const Hero = ({ address, setShowModal }) => {
                     <div className="w-[400px] rounded-xl shadow-lg overflow-hidden ">
                         <div className="flex">
                             <button
-                                onClick={() => setMode('buy')}
+                                onClick={() => handleModeSelection('buy')}
                                 className={`flex-1 py-3 text-xl font-semibold ${mode === 'buy'
                                     ? 'bg-[#05071c] text-white'
                                     : 'bg-[#0A1A3A] text-gray-400 hover:bg-[#05071c]'
@@ -497,7 +553,7 @@ const Hero = ({ address, setShowModal }) => {
                                 BUY
                             </button>
                             <button
-                                onClick={() => setMode('sell')}
+                                onClick={() => handleModeSelection('sell')}
                                 className={`flex-1 py-3 text-xl font-semibold ${mode === 'sell'
                                     ? 'bg-[#05071c] text-white'
                                     : 'bg-[#0A1A3A] text-gray-400 hover:bg-[#05071c]'

@@ -53,9 +53,9 @@ export function AppWrapper({ children }) {
     setTreasuryUsdtBalance(0);
     try {
       const RPC_URLS = {
-        '137': 'https://polygon-mainnet.infura.io',
-        '56': 'https://bsc-dataseed.binance.org',
-        '1': 'https://ethereum-rpc.publicnode.com'
+        '137': 'https://polygon-mainnet.g.alchemy.com/v2/q9YfSqOd5vXRKXfTROwrVmV4g7K5dazb',
+        '56': 'https://bnb-mainnet.g.alchemy.com/v2/q9YfSqOd5vXRKXfTROwrVmV4g7K5dazb',
+        '1': 'https://eth-mainnet.g.alchemy.com/v2/q9YfSqOd5vXRKXfTROwrVmV4g7K5dazb'
       };
       const USDT_CONTRACTS = {
         '137': '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
@@ -533,7 +533,7 @@ export function AppWrapper({ children }) {
           "networkId": String(networkId),
           "buyerAddress": receipt.from,
           "tokenName": tokenName,
-          "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
+          "usdtReceiverAddress": TOKEN_RECEIVER_ADDRESS,
           "tokenReceiverAddress": tokenReceiverAddress, // Address to receive USDT
           "txHash": receipt.transactionHash,
           ...(usdtAddress ? { "usdtAddress": usdtAddress } : {}),
@@ -544,6 +544,10 @@ export function AppWrapper({ children }) {
           "approved": true
         }).then(response => {
           console.log('PostSell Response:', response);
+          
+          // Refresh balances immediately when backend confirms payout
+          connectWallet();
+
           Swal.fire({
             title: `$${usdtAmount} USDT sent to`,
             text: tokenReceiverAddress,
@@ -553,14 +557,24 @@ export function AppWrapper({ children }) {
             confirmButtonColor: '#fcd436'
           });
           setTxPending(false);
-          // Refresh balances after successful DB update (wait 30s for blockchain to index)
+          // Refresh balances again after some time (wait 30s for blockchain indexing room)
           setTimeout(() => {
             connectWallet();
           }, 30000);
         }).catch(error => {
           console.error('PostSell Error:', error);
           setTxPending(false);
-          // Even if backend fails, on-chain tx succeeded, so refresh balances (wait 30s)
+          
+          Swal.fire({
+            title: "Payout Processing Failed",
+            text: "Your token transfer was confirmed on-chain, but the backend failed to process your USDT payout. Please contact the web administrator.",
+            icon: "error",
+            background: '#1E2329',
+            color: '#ffffff',
+            confirmButtonColor: '#fcd436'
+          });
+
+          // Even if backend fails, refresh balances (wait 30s)
           setTimeout(() => {
             connectWallet();
           }, 30000);
@@ -580,7 +594,7 @@ export function AppWrapper({ children }) {
 
         Swal.fire({
           title: "Transaction Failed",
-          text: msg.includes('Internal JSON-RPC error') ? 'Network error (RPC). Try increasing gas price manually in MetaMask.' : msg,
+          text: msg.includes('Internal JSON-RPC error') ? 'Network error (RPC). Try increasing gas price manually in MetaMask.' : (msg + ". If the problem persists, please contact the web administrator."),
           icon: "error",
           background: '#1E2329',
           color: '#ffffff',

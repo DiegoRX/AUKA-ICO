@@ -602,9 +602,33 @@ const Home = () => {
         if (walletAddress && walletAddress.length > 0) {
             if (newMode === 'buy') {
                 // Return to Payment Network (usually Polygon)
+                Swal.fire({
+                    title: "Switching to BUY mode",
+                    text: "Preparing Payment Network (Polygon). Please accept any network switch request.",
+                    icon: "info",
+                    timer: 2500,
+                    showConfirmButton: false,
+                    background: '#1E2329',
+                    color: '#ffffff',
+                    customClass: {
+                        popup: 'border-none rounded-[24px]'
+                    }
+                });
                 await handleSwitchToPolygon();
             } else {
                 // Switch to the network appropriate for the selected token in SELL mode
+                Swal.fire({
+                    title: "Switching to SELL mode",
+                    text: "Preparing Orden Global Network. Please accept any network switch request.",
+                    icon: "info",
+                    timer: 2500,
+                    showConfirmButton: false,
+                    background: '#1E2329',
+                    color: '#ffffff',
+                    customClass: {
+                        popup: 'border-none rounded-[24px]'
+                    }
+                });
                 if (selectedToken.symbol === 'ORIGEN') {
                     await handleSwitchToOrdenGlobal();
                 } else {
