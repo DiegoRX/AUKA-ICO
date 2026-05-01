@@ -397,7 +397,7 @@ export function AppWrapper({ children }) {
 
           RequestService.post({
             date: new Date().toISOString(),
-            providerUrl,
+            providerUrl: typeof providerUrl === 'string' ? providerUrl : 'metamask',
             network,
             "networkId": String(networkId),
             "buyerAddress": receipt.from,
@@ -405,7 +405,7 @@ export function AppWrapper({ children }) {
             "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
             "tokenReceiverAddress": tokenReceiverAddress,
             "txHash": receipt.transactionHash,
-            "usdtAddress": usdtAddress,
+            ...(usdtAddress ? { "usdtAddress": usdtAddress } : {}),
             "usdtAmount": String(usdtAmount),
             "tokenAmount": String(tokenAmount),
             "weiUSDTValue": String(weiUSDTValue),
@@ -499,7 +499,7 @@ export function AppWrapper({ children }) {
 
         RequestService.postSell({
           date: new Date().toISOString(),
-          providerUrl,
+          providerUrl: typeof providerUrl === 'string' ? providerUrl : 'metamask',
           network,
           "networkId": String(networkId),
           "buyerAddress": receipt.from,
@@ -507,7 +507,7 @@ export function AppWrapper({ children }) {
           "usdtReceiverAddress": USDT_RECEIVER_ADDRESS,
           "tokenReceiverAddress": tokenReceiverAddress, // Address to receive USDT
           "txHash": receipt.transactionHash,
-          "usdtAddress": usdtAddress,
+          ...(usdtAddress ? { "usdtAddress": usdtAddress } : {}),
           "usdtAmount": String(usdtAmount),
           "tokenAmount": String(tokenAmount),
           "weiUSDTValue": String(weiUSDTValue),
