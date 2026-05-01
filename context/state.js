@@ -219,6 +219,58 @@ export function AppWrapper({ children }) {
 
   // --- GENERIC TRANSACTION METHODS ---
 
+  /**
+   * Builds the correct gas params based on the network.
+   * BSC (56) and Orden Global (8532) do NOT support EIP-1559 → use gasPrice only.
+   * Polygon (137) and Ethereum (1) support EIP-1559 → use maxFeePerGas + maxPriorityFeePerGas.
+   * This prevents the MetaMask -32603 error "gasPrice and maxFeePerGas cannot be mixed".
+   */
+  const buildGasParams = async (web3Provider, chainId) => {
+    const chainStr = String(chainId);
+    const LEGACY_CHAINS = ['56', '8532']; // BSC, Orden Global - no EIP-1559
+    const web3Util = new Web3();
+
+    if (LEGACY_CHAINS.includes(chainStr)) {
+      // Legacy transaction model: only gasPrice
+      let gasPrice = await web3Provider.eth.getGasPrice();
+      const minimums = { '56': '3', '8532': '10' }; // Gwei
+      const minGwei = minimums[chainStr];
+      if (minGwei) {
+        const minWei = web3Util.utils.toWei(minGwei, 'gwei');
+        if (BigInt(gasPrice) < BigInt(minWei)) {
+          console.log(`Boosting ${chainStr} gas to ${minGwei} Gwei`);
+          gasPrice = minWei;
+        }
+      }
+      console.log(`[Gas] Chain ${chainStr} → legacy gasPrice: ${gasPrice}`);
+      return { gasPrice: String(gasPrice) };
+    } else {
+      // EIP-1559 model: maxFeePerGas + maxPriorityFeePerGas (Polygon, ETH)
+      try {
+        const block = await web3Provider.eth.getBlock('latest');
+        if (block && block.baseFeePerGas) {
+          const baseFee = BigInt(block.baseFeePerGas);
+          // Polygon needs higher priority fee (~30 Gwei), ETH ~1.5 Gwei
+          const priorityGwei = chainStr === '137' ? '30' : '1.5';
+          const priorityFee = BigInt(web3Util.utils.toWei(priorityGwei, 'gwei'));
+          // maxFee = 2x baseFee + priorityFee (gives room for base fee increases)
+          const maxFee = (baseFee * 2n + priorityFee).toString();
+          console.log(`[Gas] Chain ${chainStr} → EIP-1559 maxFee: ${maxFee}, priority: ${priorityFee}`);
+          return {
+            maxFeePerGas: maxFee,
+            maxPriorityFeePerGas: priorityFee.toString(),
+          };
+        }
+      } catch (e) {
+        console.warn('[Gas] EIP-1559 params failed, falling back to legacy:', e);
+      }
+      // Fallback to legacy if EIP-1559 data unavailable
+      const gasPrice = await web3Provider.eth.getGasPrice();
+      console.log(`[Gas] Chain ${chainStr} → fallback legacy gasPrice: ${gasPrice}`);
+      return { gasPrice: String(gasPrice) };
+    }
+  };
+
   const getTokenAddress = (symbol) => {
     switch (symbol) {
       case 'AUKA': return AUKA_ADDRESS;
@@ -306,37 +358,9 @@ export function AppWrapper({ children }) {
       }
       console.log(`weiUSDTValue: ${weiUSDTValue} (${tokenDecimals} decimals)`);
 
-
-      // --- Gas Price with per-network minimums ---
-      let gasPrice;
-      try {
-        gasPrice = await web3Provider.eth.getGasPrice();
-        console.log("Fetched Gas Price (wei):", gasPrice);
-
-        const chainId = await web3Provider.eth.getChainId();
-        console.log("Current Chain ID:", chainId);
-
-        // BSC needs >= 3 Gwei
-        if (String(chainId) === '56') {
-          const minGas = web3Temp.utils.toWei('3', 'gwei');
-          if (BigInt(gasPrice) < BigInt(minGas)) {
-            console.log("Boosting BSC gas to 3 Gwei");
-            gasPrice = minGas;
-          }
-        }
-        // Polygon needs >= 30 Gwei
-        else if (String(chainId) === '137') {
-          const minGas = web3Temp.utils.toWei('30', 'gwei');
-          if (BigInt(gasPrice) < BigInt(minGas)) {
-            console.log("Boosting Polygon gas to 30 Gwei");
-            gasPrice = minGas;
-          }
-        }
-        // Ethereum: dynamic pricing, no minimum needed
-      } catch (e) {
-        console.warn("Gas price fetch failed, letting provider decide", e);
-        gasPrice = undefined;
-      }
+      // --- Gas params: per-network strategy (legacy vs EIP-1559) ---
+      const activeChainId = await web3Provider.eth.getChainId();
+      const gasParams = await buildGasParams(web3Provider, activeChainId);
 
       // --- Gas Estimation ---
       let estimatedGas;
@@ -344,7 +368,6 @@ export function AppWrapper({ children }) {
         estimatedGas = await USDTContract.methods.transfer(USDT_RECEIVER_ADDRESS, weiUSDTValue).estimateGas({
           from: walletAddress[0]
         });
-        // Add 20% buffer
         estimatedGas = Math.floor(Number(estimatedGas) * 1.2).toString();
         console.log("Estimated Gas:", estimatedGas);
       } catch (e) {
@@ -352,13 +375,11 @@ export function AppWrapper({ children }) {
         estimatedGas = '100000';
       }
 
-      // --- Build tx params ---
       const txParams = {
         from: walletAddress[0],
-        type: '0x0', // Legacy tx type (works on all networks)
-        gas: estimatedGas
+        gas: estimatedGas,
+        ...gasParams,  // Either { gasPrice } or { maxFeePerGas, maxPriorityFeePerGas } — never both
       };
-      if (gasPrice) txParams.gasPrice = gasPrice;
 
       console.log("Sending Buy TX:", { to: USDT_RECEIVER_ADDRESS, value: weiUSDTValue, ...txParams });
 
@@ -534,26 +555,18 @@ export function AppWrapper({ children }) {
       };
 
       try {
-        // Fetch Gas Price
-        let gasPrice = await web3Provider.eth.getGasPrice();
-        console.log("Fetched Gas Price (wei):", gasPrice);
-
-        // Ensure gasPrice is at least 10 Gwei for Orden Global (sometimes needed)
-        const minGasPrice = web3Temp.utils.toWei('10', 'gwei');
-        if (BigInt(gasPrice) < BigInt(minGasPrice)) {
-          console.log("Gas price too low, boosting to 10 Gwei");
-          gasPrice = minGasPrice;
-        }
+        // Gas params: Orden Global always uses legacy (no EIP-1559)
+        const gasParams = await buildGasParams(web3Provider, '8532');
+        const gasPrice = gasParams.gasPrice; // Always legacy on OG
 
         if (tokenName === 'ORIGEN') {
-          // Native Token Transfer
+          // Native Token Transfer — legacy tx, no EIP-1559
           const transactionParameters = {
             to: TOKEN_RECEIVER_ADDRESS,
             from: walletAddress[0],
             value: weiTokenValue,
-            type: '0x0', // Force legacy transaction for Orden Global
-            gasPrice: gasPrice,
-            gas: '21000' // Fixed gas for native transfer
+            gas: '21000',
+            ...gasParams,
           };
 
           console.log("Sending ORIGEN (Native):", transactionParameters);
@@ -572,25 +585,22 @@ export function AppWrapper({ children }) {
 
           let TokenContract = new web3Provider.eth.Contract(ERC20_ABI, tokenAddr);
 
-          // Estimate gas to avoid "out of gas" or "gas limit" errors
           let estimatedGas;
           try {
             estimatedGas = await TokenContract.methods.transfer(TOKEN_RECEIVER_ADDRESS, weiTokenValue).estimateGas({
               from: walletAddress[0],
             });
             console.log("Estimated Gas:", estimatedGas);
-            // Add 30% buffer
             estimatedGas = Math.floor(Number(estimatedGas) * 1.3).toString();
           } catch (e) {
             console.warn("Gas estimation failed, using safe default", e);
-            estimatedGas = '300000'; // Increased safe default
+            estimatedGas = '300000';
           }
 
           const txParams = {
             from: walletAddress[0],
-            type: '0x0', // Force legacy transaction for Orden Global
-            gasPrice: gasPrice,
-            gas: estimatedGas
+            gas: estimatedGas,
+            ...gasParams,
           };
           console.log("Sending ERC20 (Params):", txParams);
 
@@ -599,7 +609,7 @@ export function AppWrapper({ children }) {
             .send(txParams)
             .on("transactionHash", updateTxStatus)
             .on("receipt", onReceipt)
-            .on("error", handleError); // Catch contract errors
+            .on("error", handleError);
         }
       } catch (error) {
         handleError(error);
