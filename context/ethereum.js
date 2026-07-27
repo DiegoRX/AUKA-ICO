@@ -10,7 +10,7 @@ const POLYGON_PARAMS = {
     symbol: "MATIC",
     decimals: 18,
   },
-  rpcUrls: ["https://polygon-mainnet.g.alchemy.com/v2/q9YfSqOd5vXRKXfTROwrVmV4g7K5dazb"],
+  rpcUrls: ["https://polygon-bor-rpc.publicnode.com"],
   blockExplorerUrls: ["https://polygonscan.com/"],
 };
 
@@ -34,7 +34,7 @@ export const BSC_PARAMS = {
     symbol: "BNB",
     decimals: 18,
   },
-  rpcUrls: ["https://bnb-mainnet.g.alchemy.com/v2/q9YfSqOd5vXRKXfTROwrVmV4g7K5dazb"],
+  rpcUrls: ["https://bsc-rpc.publicnode.com"],
   blockExplorerUrls: ["https://bscscan.com/"],
 };
 
@@ -46,7 +46,7 @@ export const ETH_PARAMS = {
     symbol: "ETH",
     decimals: 18,
   },
-  rpcUrls: ["https://eth-mainnet.g.alchemy.com/v2/q9YfSqOd5vXRKXfTROwrVmV4g7K5dazb"],
+  rpcUrls: ["https://ethereum-rpc.publicnode.com"],
   blockExplorerUrls: ["https://etherscan.io/"],
 };
 

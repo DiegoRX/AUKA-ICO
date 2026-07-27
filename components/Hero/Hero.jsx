@@ -94,7 +94,7 @@ const Hero = ({ address, setShowModal }) => {
 
     const [selectedToken, setSelectedToken] = useState("ORIGEN");
     const [selectedNetwork, setSelectedNetwork] = useState({
-        "providerUrl": "https://polygon-mainnet.g.alchemy.com/v2/q9YfSqOd5vXRKXfTROwrVmV4g7K5dazb",
+        "providerUrl": "https://polygon-bor-rpc.publicnode.com",
         "network": "Polygon Mainnet",
         "networkId": "137",
         "networkIdHex": "0x89",

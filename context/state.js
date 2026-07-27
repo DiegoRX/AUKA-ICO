@@ -53,9 +53,9 @@ export function AppWrapper({ children }) {
     setTreasuryUsdtBalance(0);
     try {
       const RPC_URLS = {
-        '137': 'https://polygon-mainnet.g.alchemy.com/v2/q9YfSqOd5vXRKXfTROwrVmV4g7K5dazb',
-        '56': 'https://bnb-mainnet.g.alchemy.com/v2/q9YfSqOd5vXRKXfTROwrVmV4g7K5dazb',
-        '1': 'https://eth-mainnet.g.alchemy.com/v2/q9YfSqOd5vXRKXfTROwrVmV4g7K5dazb'
+        '137': 'https://polygon-bor-rpc.publicnode.com',
+        '56': 'https://bsc-rpc.publicnode.com',
+        '1': 'https://ethereum-rpc.publicnode.com'
       };
       const USDT_CONTRACTS = {
         '137': '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',

@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import detectEthereumProvider from "@metamask/detect-provider";
 
-const POLYGON_RPC = 'https://polygon-mainnet.g.alchemy.com/v2/q9YfSqOd5vXRKXfTROwrVmV4g7K5dazb';
+const POLYGON_RPC = 'https://polygon-bor-rpc.publicnode.com';
 const OG_RPC = 'https://rpc.ordenglobal-rpc.com';
 
 const USDT_ADDRESSES = {
@@ -38,8 +38,8 @@ const getWalletBalances = (chainId, userAddress, paymentNetworkId = null) =>
 
       const polygonProvider = new ethers.JsonRpcProvider(POLYGON_RPC);
       const ogProvider = new ethers.JsonRpcProvider(OG_RPC);
-      const bscProvider = new ethers.JsonRpcProvider('https://bnb-mainnet.g.alchemy.com/v2/q9YfSqOd5vXRKXfTROwrVmV4g7K5dazb');
-      const ethProvider = new ethers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/q9YfSqOd5vXRKXfTROwrVmV4g7K5dazb');
+      const bscProvider = new ethers.JsonRpcProvider('https://bsc-rpc.publicnode.com');
+      const ethProvider = new ethers.JsonRpcProvider('https://ethereum-rpc.publicnode.com');
 
       // 1. ORIGEN Balance (Native Coin on OG Network)
       let balanceORIGEN = 0;
